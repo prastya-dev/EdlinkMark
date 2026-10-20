@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EdlinkMark</title>
+<style>
+  :root{
+    --bg:#f4f4f2; --card:#ffffff; --ink:#111111; --muted:#6f6f6f;
+    --line:#e3e3e0; --soft:#fafaf9; --hover:#f0f0ee;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none !important}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  button{font:inherit;cursor:pointer}
+  a{color:var(--ink)}
+  .wrap{max-width:760px;margin:0 auto;padding:26px 18px 70px}
+
+  /* ---------- login ---------- */
+  #login{display:flex;min-height:100vh;align-items:center;justify-content:center;padding:20px}
+  .login-card{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);
+              border-radius:14px;padding:26px 24px 22px}
+  .login-card h1{font-size:20px;margin:0 0 4px;letter-spacing:-.01em}
+  .login-card p.sub{margin:0 0 20px;color:var(--muted);font-size:13px}
+  label{display:block;font-size:12.5px;color:var(--muted);margin:0 0 6px}
+  input[type=text],input[type=password]{width:100%;padding:11px 12px;border:1px solid var(--line);
+        border-radius:9px;background:var(--soft);color:var(--ink);font-size:14px;outline:none}
+  input:focus{border-color:var(--ink);background:var(--card)}
+  .field{margin-bottom:14px}
+  .btn-primary{width:100%;padding:11px 14px;border-radius:9px;border:1px solid var(--ink);
+               background:var(--ink);color:#fff;font-weight:600;font-size:14px}
+  .btn-primary:disabled{opacity:.55;cursor:default}
+  .err{margin:0 0 14px;padding:9px 11px;border:1px solid #d8d8d4;border-radius:8px;
+       background:var(--soft);font-size:13px;color:var(--ink)}
+  .hint{margin:16px 0 0;color:var(--muted);font-size:11.5px;line-height:1.5}
+  .remember{display:flex;align-items:center;gap:8px;margin:0 0 16px;font-size:12.5px;color:var(--muted);cursor:pointer}
+  .remember input{width:14px;height:14px;accent-color:#111;margin:0}
+  .retry{text-align:center;padding:10px 0}
+  .retry p{margin:0 0 12px;color:var(--muted);font-size:13px}
+  .checking{color:var(--muted);font-size:13.5px}
+
+  /* ---------- app ---------- */
+  .top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:22px}
+  .top h1{font-size:22px;margin:0 0 3px;letter-spacing:-.02em}
+  .top .sub{margin:0;color:var(--muted);font-size:12.5px}
+  .who{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--muted);min-width:0}
+  .who .name{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .btn-ghost{border:1px solid var(--line);background:var(--card);color:var(--ink);
+             border-radius:8px;padding:7px 11px;font-size:12.5px}
+  .btn-ghost:hover{background:var(--hover)}
+
+  .block{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:20px}
+  .block h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+            margin:0 0 12px;font-weight:600}
+  .quiz{display:flex;align-items:center;justify-content:space-between;gap:12px;
+        padding:10px 0;border-top:1px solid var(--line)}
+  .quiz:first-of-type{border-top:0;padding-top:0}
+  .quiz .qmain{min-width:0}
+  .quiz .qtitle{font-weight:600;font-size:14px;overflow-wrap:anywhere}
+  .quiz .qmeta{color:var(--muted);font-size:12px;margin-top:2px}
+  .quiz a{white-space:nowrap;font-size:13px;text-decoration:none;border:1px solid var(--ink);
+          border-radius:8px;padding:7px 12px}
+  .quiz a:hover{background:var(--ink);color:#fff}
+  .none{color:var(--muted);font-size:13px;margin:0}
+
+  .tabs{display:flex;gap:6px;margin:0 0 18px;border-bottom:1px solid var(--line)}
+  .tab{border:0;background:none;padding:10px 4px;margin-right:18px;color:var(--muted);font-size:14px;
+       border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
+  .tab .count{color:var(--muted);font-weight:400;font-size:12px;margin-left:3px}
+
+  .group{margin-bottom:26px}
+  .group h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+            margin:0 0 9px;font-weight:600}
+  .post{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 17px;margin-bottom:10px}
+  .phead{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-bottom:7px;font-size:12px;color:var(--muted)}
+  .badge{border:1px solid var(--line);border-radius:6px;padding:2px 7px;font-size:11px;
+         font-weight:600;color:var(--ink);background:var(--soft);text-transform:uppercase;letter-spacing:.03em}
+  .post h4{margin:0 0 8px;font-size:16px;line-height:1.35;overflow-wrap:anywhere}
+  .desc{font-size:14px;color:#222;overflow-wrap:anywhere}
+  .desc :first-child{margin-top:0}
+  .desc :last-child{margin-bottom:0}
+  .desc p{margin:0 0 9px}
+  .desc ul,.desc ol{margin:0 0 9px;padding-left:22px}
+  .desc img{max-width:100%;height:auto;border-radius:8px}
+  .desc a{text-decoration:underline}
+  .files{margin:12px 0 0;display:flex;flex-direction:column;gap:7px}
+  .file{display:flex;align-items:center;justify-content:space-between;gap:12px;
+        border:1px solid var(--line);background:var(--soft);border-radius:9px;padding:9px 12px}
+  .file .fmain{min-width:0}
+  .file .fname{font-size:13.5px;font-weight:500;overflow-wrap:anywhere}
+  .file .fmeta{font-size:11px;color:var(--muted)}
+  .dl{border:1px solid var(--ink);background:var(--card);color:var(--ink);border-radius:7px;
+      padding:6px 11px;font-size:12.5px;white-space:nowrap}
+  .dl:hover{background:var(--ink);color:#fff}
+  .dl:disabled{opacity:.5}
+  .pfoot{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-top:13px;
+         padding-top:11px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+  .pfoot .open{margin-left:auto;text-decoration:none;font-size:12.5px;color:var(--ink);
+               border-bottom:1px solid var(--ink);padding-bottom:1px;white-space:nowrap}
+  .empty{border:1px dashed var(--line);border-radius:12px;padding:36px 18px;text-align:center;
+         color:var(--muted);font-size:13.5px}
+  .loading{color:var(--muted);font-size:13.5px;text-align:center;padding:40px 0}
+
+  /* ---------- mobile ---------- */
+  @media (max-width:640px){
+    .wrap{padding:20px 14px 60px}
+    .top{flex-direction:column;align-items:stretch;gap:10px;margin-bottom:18px}
+    .top h1{font-size:20px;margin-bottom:2px}
+    .top .sub{font-size:11.5px;line-height:1.45}
+    .who{width:100%;justify-content:space-between;gap:8px;padding-top:2px}
+    .who .name{flex:1 1 auto;min-width:0;max-width:none;font-size:12px}
+    .btn-ghost{flex:0 0 auto;padding:6px 10px;font-size:12px}
+    .block{padding:14px 15px;margin-bottom:16px}
+    .post{padding:13px 15px}
+    .post h4{font-size:15.5px}
+    .tabs{overflow-x:auto;scrollbar-width:none}
+    .tabs::-webkit-scrollbar{display:none}
+    .pfoot{gap:5px 10px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<section id="login" hidden>
+  <div id="checking" class="checking" hidden>Memeriksa sesi…</div>
+  <form class="login-card" id="loginForm" autocomplete="on">
+    <h1>EdlinkMark</h1>
+    <p class="sub">Masuk dengan NIM dan kata sandi EdLink.</p>
+    <div id="loginErr"></div>
+    <div class="field">
+      <label for="nim">NIM / Email</label>
+      <input id="nim" type="text" placeholder="Contoh: 2024001234" autocomplete="username" required>
+    </div>
+    <div class="field">
+      <label for="pass">Kata sandi</label>
+      <input id="pass" type="password" placeholder="Kata sandi EdLink" autocomplete="current-password" required>
+    </div>
+    <label class="remember">
+      <input id="remember" type="checkbox" checked>
+      <span>Ingat saya di perangkat ini (login otomatis)</span>
+    </label>
+    <button class="btn-primary" id="loginBtn" type="submit">Masuk</button>
+   
+  </form>
+</section>
+
+<!-- ================= APP ================= -->
+<main id="app" hidden>
+  <div class="wrap">
+    <header class="top">
+      <div>
+        <h1>EdlinkMark</h1>
+        <p class="sub" id="scope"></p>
+      </div>
+      <div class="who">
+        <span class="name" id="whoName"></span>
+        <button class="btn-ghost" id="logout" type="button">Keluar</button>
+      </div>
+    </header>
+
+    <section class="block">
+      <h2>Kuis belum dikerjakan</h2>
+      <div id="quizList"></div>
+    </section>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="unliked" type="button">Belum di-like <span class="count" id="cUnliked"></span></button>
+      <button class="tab" data-tab="liked" type="button">Sudah di-like <span class="count" id="cLiked"></span></button>
+    </nav>
+
+    <div id="posts"><div class="loading">Memuat…</div></div>
+  </div>
+</main>
+
+<script>
+(function(){
+  'use strict';
+
+  // API hanya mengizinkan origin tertentu. Di produksi kita lewat proxy same-origin
+  // (lihat vercel.json: /api/* -> https://kuliah.unsia.ac.id/api/*), di lokal langsung.
+  var LOCAL = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || location.protocol === 'file:';
+  var BASE   = LOCAL ? 'https://kuliah.unsia.ac.id/api/v1.4' : '/api/v1.4';
+  var APP_ID = '031068';
+  var KEY    = 'edlink_apikey';
+  var CRED   = 'edlink_creds';
+  var WINDOW = 14 * 24 * 60 * 60 * 1000;   // sesi ini + 1 sesi sebelumnya
+
+  var TYPES = { M:'Materi', Q:'Tugas Individu', '1':'Tugas Kelompok', Z:'Kuis',
+                I:'Pengumuman', V:'Video', H:'Video Interaktif', '2':'Ujian CBT',
+                S:'Polling', E:'Acara' };
+
+  var token = localStorage.getItem(KEY) || '';
+  var state = { tab:'unliked', posts:[], groups:[], quizzes:[], user:null };
+
+  var $ = function(id){ return document.getElementById(id); };
+
+  /* ---------------- helpers ---------------- */
+
+  function fmtDate(ms){
+    if(!ms) return '';
+    var d = new Date(ms);
+    return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
+  }
+  function fmtSize(n){
+    n = Number(n)||0;
+    if(n >= 1048576) return (n/1048576).toFixed(1)+' MB';
+    if(n >= 1024) return Math.round(n/1024)+' KB';
+    return n ? n+' B' : '';
+  }
+  function esc(s){
+    return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function sanitize(html){
+    var box = document.createElement('div');
+    box.innerHTML = html || '';
+    box.querySelectorAll('script,style,iframe,object,embed,form').forEach(function(el){ el.remove(); });
+    box.querySelectorAll('*').forEach(function(el){
+      Array.prototype.slice.call(el.attributes).forEach(function(a){
+        if(/^on/i.test(a.name)) el.removeAttribute(a.name);
+        if(a.name === 'href' && /^\s*javascript:/i.test(a.value)) el.removeAttribute('href');
+      });
+      if(el.tagName === 'A'){ el.target = '_blank'; el.rel = 'noopener'; }
+      if(el.tagName === 'IMG'){ el.loading = 'lazy'; }
+    });
+    return box.innerHTML;
+  }
+
+  async function api(path, body, noAuth){
+    var headers = {
+      'Accept':'application/json',
+      'Content-Type':'application/json',
+      'X-App-Locale':'id',
+      'X-Referer':'https://kuliah.unsia.ac.id/'
+    };
+    if(!noAuth && token) headers['Authorization'] = 'Bearer ' + token;
+
+    var res;
+    try{
+      res = await fetch(BASE + path, {
+        method:'POST', headers: headers, body: JSON.stringify(body || {})
+      });
+    }catch(err){
+      throw { network:true, message:'Tidak bisa terhubung ke server.' };
+    }
+    var json;
+    try{ json = await res.json(); }
+    catch(err){ throw { network:true, message:'Respons server tidak dikenali.' }; }
+
+    var code = json && json.applicationSystem ? json.applicationSystem.code : null;
+    if(code === 2 && !noAuth){
+      throw { auth:true, message:'Sesi berakhir, silakan masuk lagi.' };
+    }
+    return json;
+  }
+
+  function getCreds(){
+    try{
+      var raw = localStorage.getItem(CRED);
+      if(!raw) return null;
+      var o = JSON.parse(atob(raw));
+      return (o && o.u && o.p) ? o : null;
+    }catch(e){ return null; }
+  }
+  function setCreds(u, p){
+    try{ localStorage.setItem(CRED, btoa(JSON.stringify({ u:u, p:p }))); }catch(e){}
+  }
+  function clearCreds(){
+    try{ localStorage.removeItem(CRED); }catch(e){}
+  }
+
+  function login(uname, pass){
+    var device = JSON.stringify({
+      secureId: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())),
+      name:'Chrome', manufacture:'Google', model:'Chrome', product:'Chrome',
+      hardware:'Linux', version:(navigator.userAgent.match(/Chrome\/([\d.]+)/)||[])[1]||'',
+      regId:null
+    });
+    return api('/site/login', {
+      username: uname, app_id: APP_ID, email:'', password: pass,
+      web_reg_id: null, device: device
+    }, true);
+  }
+
+  // cadangan bila bentuk respons login berubah: cari string token di dalam data
+  function findToken(obj, depth){
+    depth = depth || 0;
+    if(!obj || typeof obj !== 'object' || depth > 3) return null;
+    if(typeof obj.token === 'string' && obj.token.length >= 20) return obj.token;
+    var keys = ['userToken','member','user','account'];
+    for(var i = 0; i < keys.length; i++){
+      var t = findToken(obj[keys[i]], depth + 1);
+      if(t) return t;
+    }
+    return null;
+  }
+
+  async function downloadFile(url, name, btn){
+    var old = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Mengunduh…';
+    try{
+      var r = await fetch(url);
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      var blob = await r.blob();
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = name || 'berkas';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+      btn.textContent = 'Terunduh';
+    }catch(e){
+      window.open(url, '_blank', 'noopener');
+      btn.textContent = old;
+    }
+    btn.disabled = false;
+    setTimeout(function(){ btn.textContent = old; }, 2500);
+  }
+
+  /* ---------------- rendering ---------------- */
+
+  function renderApp(user){
+    $('login').hidden = true;
+    $('app').hidden = false;
+    $('whoName').textContent = (user && (user.name || user.email)) || '';
+  }
+
+  function showLogin(msg){
+    $('app').hidden = true;
+    $('login').hidden = false;
+    $('checking').hidden = true;
+    $('loginForm').hidden = false;
+    $('loginErr').innerHTML = msg ? '<p class="err">' + esc(msg) + '</p>' : '';
+    var last = localStorage.getItem('edlink_last');
+    if(last && !$('nim').value) $('nim').value = last;
+  }
+
+  function showChecking(){
+    $('app').hidden = true;
+    $('login').hidden = false;
+    $('loginForm').hidden = true;
+    $('checking').hidden = false;
+  }
+
+  function showRetry(msg){
+    $('app').hidden = true;
+    $('login').hidden = false;
+    $('checking').hidden = true;
+    $('loginForm').hidden = false;
+    $('loginErr').innerHTML = '<div class="retry"><p>' + esc(msg || 'Gagal terhubung ke server.') + '</p></div>';
+    var btn = document.createElement('button');
+    btn.className = 'btn-primary';
+    btn.type = 'button';
+    btn.textContent = 'Coba lagi';
+    btn.addEventListener('click', function(){ btn.disabled = true; boot(); });
+    $('loginErr').firstChild.appendChild(btn);
+  }
+
+  function postCard(p){
+    var el = document.createElement('article');
+    el.className = 'post';
+
+    var type = TYPES[String(p.type)] || 'Postingan';
+    var meets = p.section && p.section.meet ? 'Pertemuan ' + p.section.meet : '';
+    var author = (p.universityUser && p.universityUser.name) || (p.user && p.user.name) || '';
+    var gid = p.groupId;
+    var link = 'https://kuliah.unsia.ac.id/panel/classes/' + gid + '/sections';
+    if(p.section && p.section.id) link += '/' + p.section.id + '/' + p.id;
+
+    var head = document.createElement('div');
+    head.className = 'phead';
+    head.innerHTML = '<span class="badge">' + esc(type) + '</span>' +
+      (meets ? '<span>' + esc(meets) + '</span>' : '') +
+      '<span>' + esc(fmtDate(p.createdAt)) + '</span>';
+
+    var h = document.createElement('h4');
+    h.textContent = p.title || '(tanpa judul)';
+
+    el.appendChild(head);
+    el.appendChild(h);
+
+    if(p.description){
+      var d = document.createElement('div');
+      d.className = 'desc';
+      d.innerHTML = sanitize(p.description);
+      el.appendChild(d);
+    }
+
+    var medias = (p.medias || []).filter(function(m){
+      return (m.file && m.file.link) || m.link;
+    });
+    if(medias.length){
+      var wrap = document.createElement('div');
+      wrap.className = 'files';
+      medias.forEach(function(m){
+        var url = (m.file && m.file.link) || m.link;
+        var row = document.createElement('div');
+        row.className = 'file';
+        var main = document.createElement('div');
+        main.className = 'fmain';
+        var nm = document.createElement('div'); nm.className = 'fname'; nm.textContent = m.name || 'Berkas';
+        var mt = document.createElement('div'); mt.className = 'fmeta';
+        mt.textContent = [ (m.extension||'').toUpperCase(), fmtSize(m.size) ].filter(Boolean).join(' · ');
+        main.appendChild(nm); main.appendChild(mt);
+        var btn = document.createElement('button');
+        btn.className = 'dl'; btn.type = 'button'; btn.textContent = 'Unduh';
+        btn.addEventListener('click', function(){ downloadFile(url, m.name, btn); });
+        row.appendChild(main); row.appendChild(btn);
+        wrap.appendChild(row);
+      });
+      el.appendChild(wrap);
+    }
+
+    var foot = document.createElement('div');
+    foot.className = 'pfoot';
+    var likes = document.createElement('span');
+    likes.textContent = (p.likesCount || 0) + ' suka';
+    var comments = document.createElement('span');
+    comments.textContent = (p.commentCount || 0) + ' komentar';
+    foot.appendChild(likes);
+    foot.appendChild(comments);
+    if(author){
+      var au = document.createElement('span');
+      au.textContent = author;
+      foot.appendChild(au);
+    }
+    var a = document.createElement('a');
+    a.className = 'open';
+    a.href = link; a.target = '_blank'; a.rel = 'noopener';
+    a.textContent = 'Buka di EdLink →';
+    foot.appendChild(a);
+
+    el.appendChild(foot);
+    return el;
+  }
+
+  function renderQuizzes(){
+    var box = $('quizList');
+    box.textContent = '';
+    if(!state.quizzes.length){
+      var p = document.createElement('p');
+      p.className = 'none';
+      p.textContent = 'Tidak ada kuis yang belum dikerjakan.';
+      box.appendChild(p);
+      return;
+    }
+    state.quizzes.forEach(function(q){
+      var row = document.createElement('div');
+      row.className = 'quiz';
+
+      var main = document.createElement('div');
+      main.className = 'qmain';
+      var t = document.createElement('div');
+      t.className = 'qtitle';
+      t.textContent = q.post.title || 'Kuis';
+      var m = document.createElement('div');
+      m.className = 'qmeta';
+      var bits = [q.group.name];
+      if(q.quiz.questionsCount) bits.push(q.quiz.questionsCount + ' soal');
+      if(q.quiz.duration) bits.push(Math.round(Number(q.quiz.duration)/60) + ' menit');
+      m.textContent = bits.join(' · ');
+      main.appendChild(t); main.appendChild(m);
+
+      var a = document.createElement('a');
+      a.href = 'https://kuliah.unsia.ac.id/panel/classes/' + q.group.id + '/quizes';
+      a.target = '_blank'; a.rel = 'noopener';
+      a.textContent = 'Kerjakan';
+
+      row.appendChild(main); row.appendChild(a);
+      box.appendChild(row);
+    });
+  }
+
+  function renderPosts(){
+    var box = $('posts');
+    box.textContent = '';
+
+    var want = state.tab === 'liked';
+    var rows = state.posts.filter(function(p){ return want ? !!p.like : !p.like; });
+
+    if(!rows.length){
+      var e = document.createElement('div');
+      e.className = 'empty';
+      e.textContent = !state.posts.length
+        ? 'Belum ada postingan pada rentang ini.'
+        : (want ? 'Belum ada postingan yang di-like pada rentang ini.'
+                : 'Semua postingan pada rentang ini sudah di-like.');
+      box.appendChild(e);
+      return;
+    }
+
+    rows.sort(function(a,b){ return (b.createdAt||0) - (a.createdAt||0); });
+
+    var byGroup = new Map();
+    rows.forEach(function(p){
+      if(!byGroup.has(p.groupId)) byGroup.set(p.groupId, { name:p.group.name, items:[] });
+      byGroup.get(p.groupId).items.push(p);
+    });
+
+    Array.from(byGroup.entries())
+      .sort(function(a,b){
+        return (b[1].items[0].createdAt||0) - (a[1].items[0].createdAt||0);
+      })
+      .forEach(function(entry){
+        var sec = document.createElement('section');
+        sec.className = 'group';
+        var h = document.createElement('h3');
+        h.textContent = entry[1].name;
+        sec.appendChild(h);
+        entry[1].items.forEach(function(p){ sec.appendChild(postCard(p)); });
+        box.appendChild(sec);
+      });
+  }
+
+  function setTab(tab){
+    state.tab = tab;
+    document.querySelectorAll('.tab').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-tab') === tab);
+    });
+    renderPosts();
+  }
+
+  /* ---------------- data ---------------- */
+
+  async function loadAll(){
+    $('posts').innerHTML = '<div class="loading">Memuat kelas dan postingan…</div>';
+
+    if(!state.user){
+      var profile = await api('/user/profile');
+      state.user = profile.data;
+    }
+    renderApp(state.user);
+
+    var periods = await api('/university/periods');
+    var active = (periods.data || []).find(function(p){ return p.status === 1; });
+
+    var groupsRes = await api('/group/all');
+    var allGroups = (groupsRes.data && groupsRes.data.data) || [];
+    state.groups = active
+      ? allGroups.filter(function(g){ return String(g.periode) === String(active.value); })
+      : allGroups;
+
+    var cutoff = Date.now() - WINDOW;
+    var posts = [];
+    var quizzes = [];
+
+    await Promise.all(state.groups.map(async function(g){
+      var res;
+      try{ res = await api('/post/group/' + g.id); }catch(e){ return; }
+      var list = (res.data && res.data.data) || [];
+      list.forEach(function(p){
+        var post = Object.assign({}, p, { group: { id:g.id, name:g.name } });
+        if(p.type === 'Z' && p.quiz){
+          var q = p.quiz;
+          var done = q.isAnsweredAll === true || !!q.submittedAt ||
+                     ['submitted','finished','graded','done'].indexOf(String(q.takenStatus||'').toLowerCase()) >= 0;
+          if(!done) quizzes.push({ post:post, quiz:q, group:{ id:g.id, name:g.name } });
+        }
+        if((p.createdAt || 0) >= cutoff) posts.push(post);
+      });
+    }));
+
+    quizzes.sort(function(a,b){ return (b.post.createdAt||0) - (a.post.createdAt||0); });
+    state.posts = posts;
+    state.quizzes = quizzes;
+
+    $('cUnliked').textContent = posts.filter(function(p){ return !p.like; }).length;
+    $('cLiked').textContent = posts.filter(function(p){ return !!p.like; }).length;
+    $('scope').textContent = 'Sesi ini & 1 sesi sebelumnya (14 hari terakhir) · ' +
+      (active ? active.text : 'periode aktif');
+
+    renderQuizzes();
+    renderPosts();
+  }
+
+  async function doLogin(uname, pass){
+    var res = await login(uname, pass);
+    var sys = res.applicationSystem || {};
+    var tok = (res.data && res.data.userToken && res.data.userToken.token) || findToken(res.data);
+    if(sys.code !== 0 || !tok){
+      throw new Error(sys.message || 'NIM atau kata sandi salah.');
+    }
+    token = tok;
+    try{
+      localStorage.setItem(KEY, token);
+      localStorage.setItem('edlink_last', uname);
+    }catch(e){ /* storage penuh / diblokir */ }
+    $('loginErr').innerHTML = '';
+    await loadAll();
+  }
+
+  async function boot(){
+    if(!token){ showLogin(''); return; }
+
+    showChecking();
+    try{
+      var profile = await api('/user/profile');
+      state.user = profile.data;
+      renderApp(state.user);
+      await loadAll();
+      return;
+    }catch(e){
+      if(e && e.network){ showRetry(e.message); return; }
+
+      // token ditolak server: coba masuk ulang otomatis bila kredensial tersimpan
+      var creds = getCreds();
+      if(creds){
+        try{
+          await doLogin(creds.u, creds.p);
+          return;
+        }catch(e2){
+          if(e2 && e2.network){ showRetry(e2.message); return; }
+        }
+      }
+
+      token = '';
+      try{ localStorage.removeItem(KEY); }catch(e3){}
+      showLogin('Sesi berakhir. Silakan masuk lagi.');
+    }
+  }
+
+  /* ---------------- events ---------------- */
+
+  $('loginForm').addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    var uname = $('nim').value.trim();
+    var pass  = $('pass').value;
+    if(!uname || !pass) return;
+
+    var btn = $('loginBtn');
+    btn.disabled = true; btn.textContent = 'Memeriksa…';
+    $('loginErr').innerHTML = '';
+
+    try{
+      await doLogin(uname, pass);
+      if($('remember').checked) setCreds(uname, pass);
+      else clearCreds();
+      $('pass').value = '';
+    }catch(e){
+      var msg = e && e.message ? e.message : 'Gagal masuk.';
+      if(e && e.network) msg = 'Tidak bisa terhubung ke server. Pastikan halaman dibuka lewat http://localhost, bukan file://.';
+      $('loginErr').innerHTML = '<p class="err">' + esc(msg) + '</p>';
+    }
+    btn.disabled = false; btn.textContent = 'Masuk';
+  });
+
+  $('logout').addEventListener('click', function(){
+    try{
+      localStorage.removeItem(KEY);
+      localStorage.removeItem(CRED);
+    }catch(e){}
+    token = '';
+    state.posts = []; state.quizzes = []; state.user = null;
+    $('pass').value = '';
+    showLogin('');
+  });
+
+  document.querySelectorAll('.tab').forEach(function(b){
+    b.addEventListener('click', function(){ setTab(b.getAttribute('data-tab')); });
+  });
+
+  boot();
+})();
+</script>
+</body>
+</html>
