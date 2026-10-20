@@ -179,7 +179,10 @@
 (function(){
   'use strict';
 
-  var BASE   = 'https://kuliah.unsia.ac.id/api/v1.4';
+  // API hanya mengizinkan origin tertentu. Di produksi kita lewat proxy same-origin
+  // (lihat vercel.json: /api/* -> https://kuliah.unsia.ac.id/api/*), di lokal langsung.
+  var LOCAL = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || location.protocol === 'file:';
+  var BASE   = LOCAL ? 'https://kuliah.unsia.ac.id/api/v1.4' : '/api/v1.4';
   var APP_ID = '031068';
   var KEY    = 'edlink_apikey';
   var CRED   = 'edlink_creds';
