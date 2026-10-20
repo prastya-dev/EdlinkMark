@@ -420,6 +420,11 @@
       el = document.createElement('video'); el.src = url; el.controls = true; el.playsInline = true;
     }else if(/^(mp3|wav|m4a|aac|oga|ogg)$/.test(ext)){
       el = document.createElement('audio'); el.src = url; el.controls = true;
+    }else if(/^(docx?|pptx?|xlsx?|odt|ods|odp|rtf)$/.test(ext)){
+      // Office tidak bisa dirender browser; pakai penampil Google seperti web EdLink.
+      el = document.createElement('iframe');
+      el.src = 'https://docs.google.com/gview?embedded=true&url=' + encodeURIComponent(url);
+      el.title = m.name || 'Dokumen';
     }
 
     if(el){
@@ -468,7 +473,20 @@
                     (p.likesCount || 0) + ' suka';
   }
 
-  // Like mengikuti cara web EdLink: aktivitas like_post/unlike_post ke /spada/collect.
+  // Like disimpan di server lewat /post/like/{id} (POST = toggle).
+  // /spada/collect tetap dikirim sebagai pencatat aktivitas, sama seperti web EdLink.
+  function syncLike(p, res){
+    var sys = res.applicationSystem || {};
+    if(sys.code !== 0) throw new Error(sys.message || 'Gagal menyukai postingan.');
+    var d = res.data;
+    if(d && typeof d === 'object'){
+      if(typeof d.like === 'boolean') p.like = d.like;
+      if(typeof d.likesCount === 'number') p.likesCount = d.likesCount;
+    }else if(typeof d === 'boolean'){
+      p.like = d;
+    }
+  }
+
   async function toggleLike(p, btn){
     var next = !p.like;
     btn.disabled = true;
@@ -477,14 +495,14 @@
     paintLike(btn, p);
 
     try{
-      var res = await api('/spada/collect', {
+      var res = await api('/post/like/' + p.id, {}, false, { 'xsn':'1' });
+      syncLike(p, res);
+      refreshCounts();
+
+      api('/spada/collect', {
         category:'post', action: next ? 'like_post' : 'unlike_post',
         reference_id:p.id, u_type:'u', u_id:null, value:null
-      }, false, { 'xsn':'1' });
-
-      var sys = res.applicationSystem || {};
-      if(sys.code !== 0) throw new Error(sys.message || 'Gagal menyukai postingan.');
-      refreshCounts();
+      }, false, { 'xsn':'1' }).catch(function(){});
     }catch(e){
       p.like = !next;
       p.likesCount = Math.max(0, (p.likesCount || 0) + (next ? -1 : 1));
