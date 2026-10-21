@@ -76,9 +76,6 @@
        border-bottom:2px solid transparent;margin-bottom:-1px}
   .tab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
   .tab .count{color:var(--muted);font-weight:400;font-size:12px;margin-left:4px}
-  .like-btn{border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:7px;
-            padding:4px 10px;font-size:12px;line-height:1.2}
-  .like-btn.on{color:#c62828;border-color:#e7b7b7;background:#fff5f5}
 
   .group{margin-bottom:26px}
   .group h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
@@ -176,9 +173,6 @@
                        overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;
                        -webkit-box-orient:vertical;overflow:hidden}
     .post-mini .mdate{font-size:11.5px;color:var(--muted)}
-    .post-mini .mtop{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}
-    .post-mini .mlike{font-size:17px;line-height:1;color:var(--muted);padding:3px 4px;margin:-3px -4px}
-    .post-mini .mlike.on{color:#c62828}
     .post-mini:active{border-color:var(--ink)}
     /* kuis dibedakan dengan warna hijau */
     .post-mini.quiz{background:#f1faf3;border-color:#c2e5cb}
@@ -225,7 +219,7 @@
     <header class="top">
       <div>
         <h1>EdlinkMark</h1>
-        <p class="sub" id="scope"></p>
+        <!-- <p class="sub" id="scope"></p> -->
       </div>
       <div class="who">
         <span class="name" id="whoName"></span>
@@ -292,22 +286,8 @@
   var state = { posts:[], groups:[], quizzes:[], user:null, groupSel:null, postTotals:{},
                 likeTab:'unliked', railScroll:0 };
 
-  // Like disimpan lokal: API EdLink tidak punya data like pada postingan.
-  var LIKES_KEY = 'edlink_likes';
-  var likes = (function(){
-    try{
-      var v = JSON.parse(localStorage.getItem(LIKES_KEY) || '{}');
-      return (v && typeof v === 'object') ? v : {};
-    }catch(e){ return {}; }
-  })();
-  function isLiked(p){ return !!(p && likes[String(p.id)]); }
-  function toggleLike(p){
-    if(!p) return;
-    var k = String(p.id);
-    if(likes[k]) delete likes[k]; else likes[k] = 1;
-    try{ localStorage.setItem(LIKES_KEY, JSON.stringify(likes)); }catch(e){}
-    renderPosts();
-  }
+  // Status like berasal dari API EdLink (field `like` pada postingan).
+  function isLiked(p){ return !!(p && p.like); }
 
   var $ = function(id){ return document.getElementById(id); };
   var mqMobile = window.matchMedia('(max-width:640px)');
@@ -732,16 +712,6 @@
 
     var foot = document.createElement('div');
     foot.className = 'pfoot';
-    var like = document.createElement('button');
-    like.type = 'button';
-    function paintLike(){
-      var on = isLiked(p);
-      like.className = 'like-btn' + (on ? ' on' : '');
-      like.textContent = on ? '♥ Disukai' : '♡ Suka';
-    }
-    paintLike();
-    like.addEventListener('click', function(){ toggleLike(p); paintLike(); });
-    foot.appendChild(like);
     var comments = document.createElement('span');
     comments.textContent = (p.commentCount || 0) + ' komentar';
     foot.appendChild(comments);
@@ -820,24 +790,7 @@
     t.className = 'mtitle';
     t.textContent = p.title || '(tanpa judul)';
 
-    var top = document.createElement('span');
-    top.className = 'mtop';
-    top.appendChild(type);
-    var like = document.createElement('span');
-    like.className = 'mlike' + (isLiked(p) ? ' on' : '');
-    like.textContent = isLiked(p) ? '♥' : '♡';
-    like.setAttribute('role', 'button');
-    like.setAttribute('aria-label', 'Suka');
-    like.addEventListener('click', function(ev){
-      ev.stopPropagation();
-      toggleLike(p);
-      var on = isLiked(p);
-      like.className = 'mlike' + (on ? ' on' : '');
-      like.textContent = on ? '♥' : '♡';
-    });
-    top.appendChild(like);
-
-    b.appendChild(top);
+    b.appendChild(type);
     b.appendChild(t);
 
     var d = fmtDate(p.createdAt);
@@ -888,6 +841,7 @@
       tb.addEventListener('click', function(){
         if(state.likeTab === t.id) return;
         state.likeTab = t.id;
+        state.groupSel = null;   // pilih kelas pertama yang ada isinya di tab baru
         renderPosts();
       });
       tabs.appendChild(tb);
@@ -927,13 +881,18 @@
       return;
     }
 
-    // Urutan kelas: yang isi materinya paling banyak di atas.
+    // Urutan kelas: yang punya materi di tab aktif dulu, lalu yang isinya
+    // paling banyak, lalu yang paling baru.
     function latest(items){
       return items.reduce(function(m,p){ return Math.max(m, p.createdAt||0); }, 0);
     }
     var entries = Array.from(byGroup.entries())
       .sort(function(a,b){
-        return (b[1].total - a[1].total) || (latest(b[1].items) - latest(a[1].items));
+        var ea = a[1].items.length ? 1 : 0;
+        var eb = b[1].items.length ? 1 : 0;
+        return (eb - ea) ||
+               (b[1].total - a[1].total) ||
+               (latest(b[1].items) - latest(a[1].items));
       });
 
     if(isMobile()){ paintMobile(box, entries); return; }
