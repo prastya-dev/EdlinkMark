@@ -71,15 +71,11 @@
   .quiz a:hover{background:var(--ink);color:#fff}
   .none{color:var(--muted);font-size:13px;margin:0}
 
-  .tabs{display:flex;gap:6px;margin:0 0 18px;border-bottom:1px solid var(--line)}
-  .tab{border:0;background:none;padding:10px 4px;margin-right:18px;color:var(--muted);font-size:14px;
-       border-bottom:2px solid transparent;margin-bottom:-1px}
-  .tab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
-  .tab .count{color:var(--muted);font-weight:400;font-size:12px;margin-left:3px}
-
   .group{margin-bottom:26px}
   .group h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
             margin:0 0 9px;font-weight:600}
+  .group h3 .n{font-weight:600;margin-left:5px}
+  .deadline{color:#c62828;font-weight:600}
   .post{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 17px;margin-bottom:10px}
   .phead{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-bottom:7px;font-size:12px;color:var(--muted)}
   .badge{border:1px solid var(--line);border-radius:6px;padding:2px 7px;font-size:11px;
@@ -106,13 +102,6 @@
          padding-top:11px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
   .pfoot .open{margin-left:auto;text-decoration:none;font-size:12.5px;color:var(--ink);
                border-bottom:1px solid var(--ink);padding-bottom:1px;white-space:nowrap}
-  .likebtn{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);
-           background:var(--card);color:var(--muted);border-radius:999px;padding:4px 10px;
-           font-size:12px;line-height:1.2}
-  .likebtn:hover{border-color:var(--ink);color:var(--ink)}
-  .likebtn.on{color:#e05252;border-color:#f0b4b4;background:#fff6f6}
-  .likebtn:disabled{opacity:.6;cursor:default}
-  .likebtn .heart{font-size:13px;line-height:1}
   .facts{display:flex;gap:6px;flex:0 0 auto}
   .empty{border:1px dashed var(--line);border-radius:12px;padding:36px 18px;text-align:center;
          color:var(--muted);font-size:13.5px}
@@ -155,8 +144,6 @@
     .block{padding:14px 15px;margin-bottom:16px}
     .post{padding:13px 15px}
     .post h4{font-size:15.5px}
-    .tabs{overflow-x:auto;scrollbar-width:none}
-    .tabs::-webkit-scrollbar{display:none}
     .pfoot{gap:5px 10px}
 
     /* nama kelas geser ke samping, judul postingan ke bawah, klik judul untuk detail */
@@ -169,6 +156,7 @@
           font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
           scroll-snap-align:start}
     .chip.active{background:var(--ink);border-color:var(--ink);color:#fff}
+    .chip .n{opacity:.6;font-weight:500;margin-left:4px}
     .plist{display:flex;flex-direction:column;gap:8px}
     /* kartu judul: jenis postingan di atas, judul, tanggal di bawah */
     .post-mini{display:flex;flex-direction:column;align-items:flex-start;gap:7px;
@@ -182,6 +170,7 @@
     .post-mini.quiz{background:#f1faf3;border-color:#c2e5cb}
     .post-mini.quiz .badge{background:#e0f4e6;border-color:#c2e5cb;color:#186b33}
     .post-mini.quiz .mdate{color:#557f61}
+    .post-mini.quiz .mdate.deadline{color:#c62828}
 
     #viewer,#postModal{padding:0}
     .viewer-card{max-width:none;max-height:none;height:100%;border:0;border-radius:0}
@@ -235,11 +224,6 @@
       <div id="quizList"></div>
     </section>
 
-    <nav class="tabs">
-      <button class="tab active" data-tab="unliked" type="button">Belum di-like <span class="count" id="cUnliked"></span></button>
-      <button class="tab" data-tab="liked" type="button">Sudah di-like <span class="count" id="cLiked"></span></button>
-    </nav>
-
     <div id="posts"><div class="loading">Memuat…</div></div>
   </div>
 </main>
@@ -291,7 +275,7 @@
   var ANDROID_APP = 'id.co.sevima.edlink';
 
   var token = localStorage.getItem(KEY) || '';
-  var state = { tab:'unliked', posts:[], groups:[], quizzes:[], user:null, groupSel:null };
+  var state = { posts:[], groups:[], quizzes:[], user:null, groupSel:null, postTotals:{} };
 
   var $ = function(id){ return document.getElementById(id); };
   var mqMobile = window.matchMedia('(max-width:640px)');
@@ -303,6 +287,47 @@
     if(!ms) return '';
     var d = new Date(ms);
     return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
+  }
+  function fmtDateTime(ms){
+    if(!ms) return '';
+    var d = new Date(ms);
+    return d.toLocaleString('id-ID',{day:'numeric',month:'short',year:'numeric',
+                                    hour:'2-digit',minute:'2-digit'});
+  }
+
+  // Kuis dianggap selesai bila semua soal terjawab atau sudah dikumpulkan.
+  function quizDone(q){
+    return !!q && (q.isAnsweredAll === true || !!q.submittedAt ||
+      ['submitted','finished','graded','done'].indexOf(String(q.takenStatus||'').toLowerCase()) >= 0);
+  }
+
+  // Ubah nilai apa pun (milidetik, detik, atau teks tanggal) jadi timestamp.
+  function toTime(v){
+    if(v == null || v === '') return 0;
+    if(typeof v === 'string' && !/^\d+$/.test(v)) v = Date.parse(v);
+    var n = Number(v) || 0;
+    if(n && n < 1e12) n *= 1000;            // detik -> milidetik
+    var y = n ? new Date(n).getFullYear() : 0;
+    return (y >= 2000 && y <= 2100) ? n : 0; // buang durasi / nilai ngawur
+  }
+
+  // Batas waktu kuis: nama field di API bisa deadline / dueDate / endAt, jadi
+  // dicoba berurutan lalu dicari nama yang mirip.
+  function quizDeadline(obj){
+    if(!obj) return 0;
+    var q = obj.quiz || obj;
+    var pref = ['deadline','endAt','endTime','dueAt','dueDate','deadlineAt','closeAt','endDate','batas'];
+    for(var i = 0; i < pref.length; i++){
+      var t = toTime(q[pref[i]]);
+      if(t) return t;
+    }
+    var keys = Object.keys(q);
+    for(var j = 0; j < keys.length; j++){
+      if(!/deadline|due|batas|close/i.test(keys[j])) continue;
+      var t2 = toTime(q[keys[j]]);
+      if(t2) return t2;
+    }
+    return 0;
   }
   function fmtSize(n){
     n = Number(n)||0;
@@ -491,7 +516,7 @@
   }
 
   // Detail postingan: di mobile daftar hanya menampilkan judul postingan,
-  // detail lengkapnya (deskripsi, berkas, like) muncul di sini saat judul diklik,
+  // detail lengkapnya (deskripsi, berkas) muncul di sini saat judul diklik,
   // dan tombol "← Kembali" di kepala modal menutupnya lagi.
   function openPost(p){
     var box = $('pmBody');
@@ -518,58 +543,6 @@
     document.body.appendChild(el);
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function(){ el.remove(); }, 3000);
-  }
-
-  function refreshCounts(){
-    $('cUnliked').textContent = state.posts.filter(function(p){ return !p.like; }).length;
-    $('cLiked').textContent = state.posts.filter(function(p){ return !!p.like; }).length;
-  }
-
-  function paintLike(btn, p){
-    btn.classList.toggle('on', !!p.like);
-    btn.setAttribute('aria-pressed', p.like ? 'true' : 'false');
-    btn.title = p.like ? 'Batalkan suka' : 'Suka';
-    btn.innerHTML = '<span class="heart">' + (p.like ? '♥' : '♡') + '</span>' +
-                    (p.likesCount || 0) + ' suka';
-  }
-
-  // Like disimpan di server lewat /post/like/{id} (POST = toggle).
-  // /spada/collect tetap dikirim sebagai pencatat aktivitas, sama seperti web EdLink.
-  function syncLike(p, res){
-    var sys = res.applicationSystem || {};
-    if(sys.code !== 0) throw new Error(sys.message || 'Gagal menyukai postingan.');
-    var d = res.data;
-    if(d && typeof d === 'object'){
-      if(typeof d.like === 'boolean') p.like = d.like;
-      if(typeof d.likesCount === 'number') p.likesCount = d.likesCount;
-    }else if(typeof d === 'boolean'){
-      p.like = d;
-    }
-  }
-
-  async function toggleLike(p, btn){
-    var next = !p.like;
-    btn.disabled = true;
-    p.like = next;
-    p.likesCount = Math.max(0, (p.likesCount || 0) + (next ? 1 : -1));
-    paintLike(btn, p);
-
-    try{
-      var res = await api('/post/like/' + p.id, {}, false, { 'xsn':'1' });
-      syncLike(p, res);
-      refreshCounts();
-
-      api('/spada/collect', {
-        category:'post', action: next ? 'like_post' : 'unlike_post',
-        reference_id:p.id, u_type:'u', u_id:null, value:null
-      }, false, { 'xsn':'1' }).catch(function(){});
-    }catch(e){
-      p.like = !next;
-      p.likesCount = Math.max(0, (p.likesCount || 0) + (next ? -1 : 1));
-      paintLike(btn, p);
-      toast((e && e.message) || 'Gagal menyukai postingan.');
-    }
-    btn.disabled = false;
   }
 
   /* ---------------- rendering ---------------- */
@@ -627,6 +600,17 @@
     head.innerHTML = '<span class="badge">' + esc(type) + '</span>' +
       (meets ? '<span>' + esc(meets) + '</span>' : '') +
       '<span>' + esc(fmtDate(p.createdAt)) + '</span>';
+    // Kuis: tampilkan batas waktu; merah bila belum dikerjakan.
+    if(String(p.type) === 'Z'){
+      var dl = quizDeadline(p);
+      if(dl){
+        var dlEl = document.createElement('span');
+        dlEl.className = quizDone(p.quiz) ? '' : 'deadline';
+        dlEl.textContent = (quizDone(p.quiz) ? 'Batas: ' : 'Belum dikerjakan · batas ') +
+          fmtDateTime(dl);
+        head.appendChild(dlEl);
+      }
+    }
 
     var h = document.createElement('h4');
     h.textContent = p.title || '(tanpa judul)';
@@ -672,13 +656,8 @@
 
     var foot = document.createElement('div');
     foot.className = 'pfoot';
-    var likes = document.createElement('button');
-    likes.className = 'likebtn'; likes.type = 'button';
-    likes.addEventListener('click', function(){ toggleLike(p, likes); });
-    paintLike(likes, p);
     var comments = document.createElement('span');
     comments.textContent = (p.commentCount || 0) + ' komentar';
-    foot.appendChild(likes);
     foot.appendChild(comments);
     if(author){
       var au = document.createElement('span');
@@ -723,6 +702,14 @@
       m.textContent = bits.join(' · ');
       main.appendChild(t); main.appendChild(m);
 
+      var dl = quizDeadline(q.post);
+      if(dl){
+        var d = document.createElement('div');
+        d.className = 'qmeta deadline';
+        d.textContent = 'Batas: ' + fmtDateTime(dl);
+        main.appendChild(d);
+      }
+
       var a = document.createElement('a');
       a.href = edlinkLink('https://kuliah.unsia.ac.id/panel/classes/' + q.group.id + '/quizes');
       if(!IS_ANDROID){ a.target = '_blank'; a.rel = 'noopener'; }
@@ -758,6 +745,17 @@
       b.appendChild(dt);
     }
 
+    if(String(p.type) === 'Z'){
+      var dl = quizDeadline(p);
+      if(dl){
+        var ddl = document.createElement('span');
+        ddl.className = 'mdate' + (quizDone(p.quiz) ? '' : ' deadline');
+        ddl.textContent = (quizDone(p.quiz) ? 'Batas: ' : 'Belum dikerjakan · batas ') +
+          fmtDateTime(dl);
+        b.appendChild(ddl);
+      }
+    }
+
     b.addEventListener('click', function(){ openPost(p); });
     return b;
   }
@@ -766,32 +764,39 @@
     var box = $('posts');
     box.textContent = '';
 
-    var want = state.tab === 'liked';
-    var rows = state.posts.filter(function(p){ return want ? !!p.like : !p.like; });
+    var rows = state.posts.slice();
 
     if(!rows.length){
       var e = document.createElement('div');
       e.className = 'empty';
-      e.textContent = !state.posts.length
-        ? 'Belum ada postingan pada rentang ini.'
-        : (want ? 'Belum ada postingan yang di-like pada rentang ini.'
-                : 'Semua postingan pada rentang ini sudah di-like.');
+      e.textContent = 'Belum ada postingan pada rentang ini.';
       box.appendChild(e);
       return;
     }
 
-    rows.sort(function(a,b){ return (b.createdAt||0) - (a.createdAt||0); });
+    // Kuis selalu di atas, sisanya urut terbaru.
+    rows.sort(function(a,b){
+      var qa = String(a.type) === 'Z' ? 1 : 0;
+      var qb = String(b.type) === 'Z' ? 1 : 0;
+      return (qb - qa) || ((b.createdAt||0) - (a.createdAt||0));
+    });
 
     var byGroup = new Map();
     rows.forEach(function(p){
-      if(!byGroup.has(p.groupId)) byGroup.set(p.groupId, { name:p.group.name, items:[] });
+      if(!byGroup.has(p.groupId)){
+        byGroup.set(p.groupId, {
+          name:p.group.name, total:state.postTotals[p.groupId] || 0, items:[]
+        });
+      }
       byGroup.get(p.groupId).items.push(p);
     });
 
+    // Urutan mata kuliah tetap berdasarkan postingan terbaru.
+    function latest(items){
+      return items.reduce(function(m,p){ return Math.max(m, p.createdAt||0); }, 0);
+    }
     var entries = Array.from(byGroup.entries())
-      .sort(function(a,b){
-        return (b[1].items[0].createdAt||0) - (a[1].items[0].createdAt||0);
-      });
+      .sort(function(a,b){ return latest(b[1].items) - latest(a[1].items); });
 
     if(isMobile()){ paintMobile(box, entries); return; }
 
@@ -800,6 +805,10 @@
       sec.className = 'group';
       var h = document.createElement('h3');
       h.textContent = entry[1].name;
+      var n = document.createElement('span');
+      n.className = 'n';
+      n.textContent = entry[1].total;
+      h.appendChild(n);
       sec.appendChild(h);
 
       var rail = document.createElement('div');
@@ -822,6 +831,10 @@
       b.type = 'button';
       b.className = 'chip' + (entry[0] === state.groupSel ? ' active' : '');
       b.textContent = entry[1].name;
+      var n = document.createElement('span');
+      n.className = 'n';
+      n.textContent = entry[1].total;
+      b.appendChild(n);
       b.addEventListener('click', function(){
         state.groupSel = entry[0];
         renderPosts();
@@ -835,14 +848,6 @@
 
     box.appendChild(rail);
     box.appendChild(list);
-  }
-
-  function setTab(tab){
-    state.tab = tab;
-    document.querySelectorAll('.tab').forEach(function(b){
-      b.classList.toggle('active', b.getAttribute('data-tab') === tab);
-    });
-    renderPosts();
   }
 
   /* ---------------- data ---------------- */
@@ -868,18 +873,17 @@
     var cutoff = Date.now() - WINDOW;
     var posts = [];
     var quizzes = [];
+    var totals = {};
 
     await Promise.all(state.groups.map(async function(g){
       var res;
       try{ res = await api('/post/group/' + g.id); }catch(e){ return; }
       var list = (res.data && res.data.data) || [];
+      totals[g.id] = list.length;   // total postingan seluruh kelas
       list.forEach(function(p){
         var post = Object.assign({}, p, { group: { id:g.id, name:g.name } });
-        if(p.type === 'Z' && p.quiz){
-          var q = p.quiz;
-          var done = q.isAnsweredAll === true || !!q.submittedAt ||
-                     ['submitted','finished','graded','done'].indexOf(String(q.takenStatus||'').toLowerCase()) >= 0;
-          if(!done) quizzes.push({ post:post, quiz:q, group:{ id:g.id, name:g.name } });
+        if(p.type === 'Z' && p.quiz && !quizDone(p.quiz)){
+          quizzes.push({ post:post, quiz:p.quiz, group:{ id:g.id, name:g.name } });
         }
         if((p.createdAt || 0) >= cutoff) posts.push(post);
       });
@@ -888,8 +892,8 @@
     quizzes.sort(function(a,b){ return (b.post.createdAt||0) - (a.post.createdAt||0); });
     state.posts = posts;
     state.quizzes = quizzes;
+    state.postTotals = totals;
 
-    refreshCounts();
     $('scope').textContent = 'Sesi ini & 1 sesi sebelumnya (14 hari terakhir) · ' +
       (active ? active.text : 'periode aktif');
 
@@ -977,10 +981,6 @@
     state.posts = []; state.quizzes = []; state.user = null;
     $('pass').value = '';
     showLogin('');
-  });
-
-  document.querySelectorAll('.tab').forEach(function(b){
-    b.addEventListener('click', function(){ setTab(b.getAttribute('data-tab')); });
   });
 
   $('viewerClose').addEventListener('click', closeViewer);
