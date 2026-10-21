@@ -1010,8 +1010,11 @@
     state.quizzes = quizzes;
     state.postTotals = totals;
 
-    $('scope').textContent = 'Sesi ini & 1 sesi sebelumnya (14 hari terakhir) · ' +
-      (active ? active.text : 'periode aktif');
+    var scopeEl = $('scope');
+    if(scopeEl){
+      scopeEl.textContent = 'Sesi ini & 1 sesi sebelumnya (14 hari terakhir) · ' +
+        (active ? active.text : 'periode aktif');
+    }
 
     renderQuizzes();
     renderPosts();
@@ -1045,6 +1048,12 @@
       return;
     }catch(e){
       if(e && e.network){ showRetry(e.message); return; }
+
+      // Bug tampilan/JS jangan dianggap sesi habis: token tetap disimpan.
+      if(!e || !e.auth){
+        showRetry('Terjadi kesalahan: ' + ((e && e.message) || e));
+        return;
+      }
 
       // token ditolak server: coba masuk ulang otomatis bila kredensial tersimpan
       var creds = getCreds();
