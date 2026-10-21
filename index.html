@@ -71,11 +71,20 @@
           border-radius:8px;padding:7px 12px}
   #quizList .quiz a:hover{background:var(--ink);color:#fff}
   .none{color:var(--muted);font-size:13px;margin:0}
+  .tabs{display:flex;gap:6px;margin:0 0 16px;border-bottom:1px solid var(--line)}
+  .tab{border:0;background:none;padding:9px 2px;margin-right:16px;color:var(--muted);font-size:13.5px;
+       border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
+  .tab .count{color:var(--muted);font-weight:400;font-size:12px;margin-left:4px}
+  .like-btn{border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:7px;
+            padding:4px 10px;font-size:12px;line-height:1.2}
+  .like-btn.on{color:#c62828;border-color:#e7b7b7;background:#fff5f5}
 
   .group{margin-bottom:26px}
   .group h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
-            margin:0 0 9px;font-weight:600}
-  .group h3 .n{font-weight:600;margin-left:5px}
+            margin:0 0 9px;font-weight:600;display:flex;align-items:baseline;gap:5px}
+  .group h3 .gname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .group h3 .n{font-weight:600;margin-left:0;flex:0 0 auto}
   .deadline{color:#c62828;font-weight:600}
   .post{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 17px;margin-bottom:10px}
   .phead{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-bottom:7px;font-size:12px;color:var(--muted)}
@@ -152,12 +161,13 @@
           margin:0 -14px 12px;padding:2px 14px 4px;-webkit-overflow-scrolling:touch;
           scrollbar-width:none}
     .rail::-webkit-scrollbar{display:none}
-    .chip{flex:0 0 auto;max-width:72vw;border:1px solid var(--line);background:var(--card);
+    .chip{flex:0 0 auto;display:flex;align-items:center;max-width:72vw;border:1px solid var(--line);background:var(--card);
           color:var(--muted);border-radius:999px;padding:7px 13px;font-size:12.5px;
           font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
           scroll-snap-align:start}
+    .chip .cname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .chip.active{background:var(--ink);border-color:var(--ink);color:#fff}
-    .chip .n{opacity:.6;font-weight:500;margin-left:4px}
+    .chip .n{opacity:.6;font-weight:500;margin-left:4px;flex:0 0 auto}
     .plist{display:flex;flex-direction:column;gap:8px}
     /* kartu judul: jenis postingan di atas, judul, tanggal di bawah */
     .post-mini{display:flex;flex-direction:column;align-items:flex-start;gap:7px;
@@ -166,6 +176,9 @@
                        overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;
                        -webkit-box-orient:vertical;overflow:hidden}
     .post-mini .mdate{font-size:11.5px;color:var(--muted)}
+    .post-mini .mtop{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}
+    .post-mini .mlike{font-size:17px;line-height:1;color:var(--muted);padding:3px 4px;margin:-3px -4px}
+    .post-mini .mlike.on{color:#c62828}
     .post-mini:active{border-color:var(--ink)}
     /* kuis dibedakan dengan warna hijau */
     .post-mini.quiz{background:#f1faf3;border-color:#c2e5cb}
@@ -276,7 +289,25 @@
   var ANDROID_APP = 'id.co.sevima.edlink';
 
   var token = localStorage.getItem(KEY) || '';
-  var state = { posts:[], groups:[], quizzes:[], user:null, groupSel:null, postTotals:{} };
+  var state = { posts:[], groups:[], quizzes:[], user:null, groupSel:null, postTotals:{},
+                likeTab:'unliked', railScroll:0 };
+
+  // Like disimpan lokal: API EdLink tidak punya data like pada postingan.
+  var LIKES_KEY = 'edlink_likes';
+  var likes = (function(){
+    try{
+      var v = JSON.parse(localStorage.getItem(LIKES_KEY) || '{}');
+      return (v && typeof v === 'object') ? v : {};
+    }catch(e){ return {}; }
+  })();
+  function isLiked(p){ return !!(p && likes[String(p.id)]); }
+  function toggleLike(p){
+    if(!p) return;
+    var k = String(p.id);
+    if(likes[k]) delete likes[k]; else likes[k] = 1;
+    try{ localStorage.setItem(LIKES_KEY, JSON.stringify(likes)); }catch(e){}
+    renderPosts();
+  }
 
   var $ = function(id){ return document.getElementById(id); };
   var mqMobile = window.matchMedia('(max-width:640px)');
@@ -701,6 +732,16 @@
 
     var foot = document.createElement('div');
     foot.className = 'pfoot';
+    var like = document.createElement('button');
+    like.type = 'button';
+    function paintLike(){
+      var on = isLiked(p);
+      like.className = 'like-btn' + (on ? ' on' : '');
+      like.textContent = on ? '♥ Disukai' : '♡ Suka';
+    }
+    paintLike();
+    like.addEventListener('click', function(){ toggleLike(p); paintLike(); });
+    foot.appendChild(like);
     var comments = document.createElement('span');
     comments.textContent = (p.commentCount || 0) + ' komentar';
     foot.appendChild(comments);
@@ -779,7 +820,24 @@
     t.className = 'mtitle';
     t.textContent = p.title || '(tanpa judul)';
 
-    b.appendChild(type);
+    var top = document.createElement('span');
+    top.className = 'mtop';
+    top.appendChild(type);
+    var like = document.createElement('span');
+    like.className = 'mlike' + (isLiked(p) ? ' on' : '');
+    like.textContent = isLiked(p) ? '♥' : '♡';
+    like.setAttribute('role', 'button');
+    like.setAttribute('aria-label', 'Suka');
+    like.addEventListener('click', function(ev){
+      ev.stopPropagation();
+      toggleLike(p);
+      var on = isLiked(p);
+      like.className = 'mlike' + (on ? ' on' : '');
+      like.textContent = on ? '♥' : '♡';
+    });
+    top.appendChild(like);
+
+    b.appendChild(top);
     b.appendChild(t);
 
     var d = fmtDate(p.createdAt);
@@ -807,9 +865,38 @@
 
   function renderPosts(){
     var box = $('posts');
+    // Simpan posisi geser rail kelas: render ulang tidak boleh balik ke awal.
+    if(isMobile()){
+      var oldRail = box.querySelector('.rail');
+      if(oldRail) state.railScroll = oldRail.scrollLeft;
+    }
     box.textContent = '';
 
-    var rows = state.posts.slice();
+    var likedN = state.posts.filter(isLiked).length;
+    var tabs = document.createElement('div');
+    tabs.className = 'tabs';
+    [ { id:'unliked', label:'Belum di-like', n:state.posts.length - likedN },
+      { id:'liked',   label:'Sudah di-like', n:likedN } ].forEach(function(t){
+      var tb = document.createElement('button');
+      tb.type = 'button';
+      tb.className = 'tab' + (state.likeTab === t.id ? ' active' : '');
+      tb.textContent = t.label;
+      var c = document.createElement('span');
+      c.className = 'count';
+      c.textContent = t.n;
+      tb.appendChild(c);
+      tb.addEventListener('click', function(){
+        if(state.likeTab === t.id) return;
+        state.likeTab = t.id;
+        renderPosts();
+      });
+      tabs.appendChild(tb);
+    });
+    box.appendChild(tabs);
+
+    var rows = state.posts.filter(function(p){
+      return state.likeTab === 'liked' ? isLiked(p) : !isLiked(p);
+    });
 
     // Kuis selalu di atas, sisanya urut terbaru.
     rows.sort(function(a,b){
@@ -840,12 +927,14 @@
       return;
     }
 
-    // Urutan mata kuliah tetap berdasarkan postingan terbaru.
+    // Urutan kelas: yang isi materinya paling banyak di atas.
     function latest(items){
       return items.reduce(function(m,p){ return Math.max(m, p.createdAt||0); }, 0);
     }
     var entries = Array.from(byGroup.entries())
-      .sort(function(a,b){ return latest(b[1].items) - latest(a[1].items); });
+      .sort(function(a,b){
+        return (b[1].total - a[1].total) || (latest(b[1].items) - latest(a[1].items));
+      });
 
     if(isMobile()){ paintMobile(box, entries); return; }
 
@@ -853,7 +942,10 @@
       var sec = document.createElement('section');
       sec.className = 'group';
       var h = document.createElement('h3');
-      h.textContent = entry[1].name;
+      var gn = document.createElement('span');
+      gn.className = 'gname';
+      gn.textContent = entry[1].name;
+      h.appendChild(gn);
       var n = document.createElement('span');
       n.className = 'n';
       n.textContent = entry[1].total;
@@ -885,7 +977,10 @@
       var b = document.createElement('button');
       b.type = 'button';
       b.className = 'chip' + (entry[0] === state.groupSel ? ' active' : '');
-      b.textContent = entry[1].name;
+      var nm = document.createElement('span');
+      nm.className = 'cname';
+      nm.textContent = entry[1].name;
+      b.appendChild(nm);
       var n = document.createElement('span');
       n.className = 'n';
       n.textContent = entry[1].total;
@@ -909,6 +1004,7 @@
 
     box.appendChild(rail);
     box.appendChild(list);
+    rail.scrollLeft = state.railScroll || 0;
   }
 
   /* ---------------- data ---------------- */
