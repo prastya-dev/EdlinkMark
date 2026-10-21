@@ -159,16 +159,29 @@
     .tabs::-webkit-scrollbar{display:none}
     .pfoot{gap:5px 10px}
 
-    /* per mata kuliah: judul saja, geser ke samping, klik untuk detail */
-    .rail{display:flex;gap:9px;overflow-x:auto;scroll-snap-type:x proximity;
-          margin:0 -14px;padding:2px 14px 4px;-webkit-overflow-scrolling:touch;
+    /* nama kelas geser ke samping, judul postingan ke bawah, klik judul untuk detail */
+    .rail{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x proximity;
+          margin:0 -14px 12px;padding:2px 14px 4px;-webkit-overflow-scrolling:touch;
           scrollbar-width:none}
     .rail::-webkit-scrollbar{display:none}
-    .post-mini{flex:0 0 76%;margin:0;padding:13px 15px;text-align:left;color:var(--ink);
-               font-weight:600;font-size:14.5px;line-height:1.35;overflow-wrap:anywhere;
-               display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
-               overflow:hidden;scroll-snap-align:start}
+    .chip{flex:0 0 auto;max-width:72vw;border:1px solid var(--line);background:var(--card);
+          color:var(--muted);border-radius:999px;padding:7px 13px;font-size:12.5px;
+          font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+          scroll-snap-align:start}
+    .chip.active{background:var(--ink);border-color:var(--ink);color:#fff}
+    .plist{display:flex;flex-direction:column;gap:8px}
+    /* kartu judul: jenis postingan di atas, judul, tanggal di bawah */
+    .post-mini{display:flex;flex-direction:column;align-items:flex-start;gap:7px;
+               margin:0;padding:12px 15px;text-align:left;color:var(--ink)}
+    .post-mini .mtitle{font-weight:600;font-size:14.5px;line-height:1.35;
+                       overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;
+                       -webkit-box-orient:vertical;overflow:hidden}
+    .post-mini .mdate{font-size:11.5px;color:var(--muted)}
     .post-mini:active{border-color:var(--ink)}
+    /* kuis dibedakan dengan warna hijau */
+    .post-mini.quiz{background:#f1faf3;border-color:#c2e5cb}
+    .post-mini.quiz .badge{background:#e0f4e6;border-color:#c2e5cb;color:#186b33}
+    .post-mini.quiz .mdate{color:#557f61}
 
     #viewer,#postModal{padding:0}
     .viewer-card{max-width:none;max-height:none;height:100%;border:0;border-radius:0}
@@ -250,8 +263,8 @@
 <div id="postModal" hidden>
   <div class="viewer-card" role="dialog" aria-modal="true" aria-labelledby="pmTitle">
     <div class="viewer-head">
+      <button class="btn-ghost" id="pmClose" type="button">← Kembali</button>
       <span class="name" id="pmTitle"></span>
-      <button class="btn-ghost" id="pmClose" type="button">Tutup</button>
     </div>
     <div class="modal-body" id="pmBody"></div>
   </div>
@@ -278,7 +291,7 @@
   var ANDROID_APP = 'id.co.sevima.edlink';
 
   var token = localStorage.getItem(KEY) || '';
-  var state = { tab:'unliked', posts:[], groups:[], quizzes:[], user:null };
+  var state = { tab:'unliked', posts:[], groups:[], quizzes:[], user:null, groupSel:null };
 
   var $ = function(id){ return document.getElementById(id); };
   var mqMobile = window.matchMedia('(max-width:640px)');
@@ -477,8 +490,9 @@
     document.body.style.overflow = $('postModal').hidden ? '' : 'hidden';
   }
 
-  // Detail postingan: di mobile tiap mata kuliah hanya menampilkan judul,
-  // detail lengkapnya (deskripsi, berkas, like) muncul di sini saat judul diklik.
+  // Detail postingan: di mobile daftar hanya menampilkan judul postingan,
+  // detail lengkapnya (deskripsi, berkas, like) muncul di sini saat judul diklik,
+  // dan tombol "← Kembali" di kepala modal menutupnya lagi.
   function openPost(p){
     var box = $('pmBody');
     box.textContent = '';
@@ -722,8 +736,28 @@
   function postMini(p){
     var b = document.createElement('button');
     b.type = 'button';
-    b.className = 'post post-mini';
-    b.textContent = p.title || '(tanpa judul)';
+    // kuis (Z) pakai kartu hijau
+    b.className = 'post post-mini' + (String(p.type) === 'Z' ? ' quiz' : '');
+
+    var type = document.createElement('span');
+    type.className = 'badge';
+    type.textContent = TYPES[String(p.type)] || 'Postingan';
+
+    var t = document.createElement('span');
+    t.className = 'mtitle';
+    t.textContent = p.title || '(tanpa judul)';
+
+    b.appendChild(type);
+    b.appendChild(t);
+
+    var d = fmtDate(p.createdAt);
+    if(d){
+      var dt = document.createElement('span');
+      dt.className = 'mdate';
+      dt.textContent = d;
+      b.appendChild(dt);
+    }
+
     b.addEventListener('click', function(){ openPost(p); });
     return b;
   }
@@ -754,27 +788,53 @@
       byGroup.get(p.groupId).items.push(p);
     });
 
-    var mobile = isMobile();
-
-    Array.from(byGroup.entries())
+    var entries = Array.from(byGroup.entries())
       .sort(function(a,b){
         return (b[1].items[0].createdAt||0) - (a[1].items[0].createdAt||0);
-      })
-      .forEach(function(entry){
-        var sec = document.createElement('section');
-        sec.className = 'group';
-        var h = document.createElement('h3');
-        h.textContent = entry[1].name;
-        sec.appendChild(h);
-
-        var rail = document.createElement('div');
-        rail.className = 'rail';
-        entry[1].items.forEach(function(p){
-          rail.appendChild(mobile ? postMini(p) : postCard(p));
-        });
-        sec.appendChild(rail);
-        box.appendChild(sec);
       });
+
+    if(isMobile()){ paintMobile(box, entries); return; }
+
+    entries.forEach(function(entry){
+      var sec = document.createElement('section');
+      sec.className = 'group';
+      var h = document.createElement('h3');
+      h.textContent = entry[1].name;
+      sec.appendChild(h);
+
+      var rail = document.createElement('div');
+      rail.className = 'rail';
+      entry[1].items.forEach(function(p){ rail.appendChild(postCard(p)); });
+      sec.appendChild(rail);
+      box.appendChild(sec);
+    });
+  }
+
+  // Mobile: nama kelas jadi rail yang digeser ke samping, judul postingan turun ke bawah.
+  function paintMobile(box, entries){
+    var sel = entries.filter(function(e){ return e[0] === state.groupSel; })[0] || entries[0];
+    state.groupSel = sel[0];
+
+    var rail = document.createElement('div');
+    rail.className = 'rail';
+    entries.forEach(function(entry){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip' + (entry[0] === state.groupSel ? ' active' : '');
+      b.textContent = entry[1].name;
+      b.addEventListener('click', function(){
+        state.groupSel = entry[0];
+        renderPosts();
+      });
+      rail.appendChild(b);
+    });
+
+    var list = document.createElement('div');
+    list.className = 'plist';
+    sel[1].items.forEach(function(p){ list.appendChild(postMini(p)); });
+
+    box.appendChild(rail);
+    box.appendChild(list);
   }
 
   function setTab(tab){
