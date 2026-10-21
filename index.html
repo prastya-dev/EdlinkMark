@@ -85,6 +85,7 @@
   .deadline{color:#c62828;font-weight:600}
   .post{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 17px;margin-bottom:10px}
   .phead{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-bottom:7px;font-size:12px;color:var(--muted)}
+  .likedtag{margin-left:auto;font-style:italic;font-weight:600;color:#186b33;font-size:11.5px}
   .badge{border:1px solid var(--line);border-radius:6px;padding:2px 7px;font-size:11px;
          font-weight:600;color:var(--ink);background:var(--soft);text-transform:uppercase;letter-spacing:.03em}
   .post h4{margin:0 0 8px;font-size:16px;line-height:1.35;overflow-wrap:anywhere}
@@ -167,8 +168,10 @@
     .chip .n{opacity:.6;font-weight:500;margin-left:4px;flex:0 0 auto}
     .plist{display:flex;flex-direction:column;gap:8px}
     /* kartu judul: jenis postingan di atas, judul, tanggal di bawah */
-    .post-mini{display:flex;flex-direction:column;align-items:flex-start;gap:7px;
+    .post-mini{display:flex;flex-direction:column;align-items:flex-start;gap:7px;position:relative;
                margin:0;padding:12px 15px;text-align:left;color:var(--ink)}
+    .post-mini .mliked{position:absolute;top:9px;right:12px;font-style:italic;font-weight:600;
+                       color:#186b33;font-size:11px}
     .post-mini .mtitle{font-weight:600;font-size:14.5px;line-height:1.35;
                        overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;
                        -webkit-box-orient:vertical;overflow:hidden}
@@ -228,7 +231,7 @@
     </header>
 
     <section class="block">
-      <h2>Kuis belum dikerjakan</h2>
+      <h2>Kuis &amp; tugas belum dikerjakan</h2>
       <div id="quizList"></div>
     </section>
 
@@ -313,6 +316,16 @@
       ['submitted','finished','graded','done'].indexOf(String(q.takenStatus||'').toLowerCase()) >= 0);
   }
 
+  // Tugas selesai bila sudah dijawab/dinilai; tugas kelompok: sudah ada yang kumpul.
+  function taskDone(t){
+    return !!t && (t.isAnswered === true || t.isGraded === true ||
+      !!t.submittedAt || Number(t.answererCount) > 0);
+  }
+  function taskDeadline(p){
+    var t = p && p.teacherQuestion;
+    return t ? (toTime(t.dueDateTimestamp) || toTime(t.dueDate)) : 0;
+  }
+
   // Ubah nilai apa pun (milidetik, detik, atau teks tanggal) jadi timestamp.
   function toTime(v){
     if(v == null || v === '') return 0;
@@ -343,6 +356,18 @@
   }
   function quizDeadline(obj){
     return deadlineIn(obj, 0);
+  }
+  // Batas kuis ada di field finishedAt (tidak cocok dengan pola "deadline").
+  function quizDue(q){
+    if(!q) return 0;
+    return toTime(q.finishedAtTimestamp) || toTime(q.finishedAt) ||
+           toTime(q.deadlineTimestamp) || toTime(q.deadline) || quizDeadline(q);
+  }
+  function postLink(p){
+    var gid = p.groupId || (p.group && p.group.id);
+    var link = 'https://kuliah.unsia.ac.id/panel/classes/' + gid + '/sections';
+    if(p.section && p.section.id) link += '/' + p.section.id + '/' + p.id;
+    return link;
   }
   function fmtSize(n){
     n = Number(n)||0;
@@ -640,16 +665,14 @@
     $('loginErr').firstChild.appendChild(btn);
   }
 
-  function postCard(p){
+  function postCard(p, likedBadge){
     var el = document.createElement('article');
     el.className = 'post';
 
     var type = TYPES[String(p.type)] || 'Postingan';
     var meets = p.section && p.section.meet ? 'Pertemuan ' + p.section.meet : '';
     var author = (p.universityUser && p.universityUser.name) || (p.user && p.user.name) || '';
-    var gid = p.groupId;
-    var link = 'https://kuliah.unsia.ac.id/panel/classes/' + gid + '/sections';
-    if(p.section && p.section.id) link += '/' + p.section.id + '/' + p.id;
+    var link = postLink(p);
 
     var head = document.createElement('div');
     head.className = 'phead';
@@ -658,7 +681,7 @@
       '<span>' + esc(fmtDate(p.createdAt)) + '</span>';
     // Kuis: tampilkan batas waktu; merah bila belum dikerjakan.
     if(String(p.type) === 'Z'){
-      var dl = quizDeadline(p);
+      var dl = quizDue(p.quiz);
       if(dl){
         var dlEl = document.createElement('span');
         dlEl.className = quizDone(p.quiz) ? '' : 'deadline';
@@ -666,6 +689,12 @@
           fmtDateTime(dl);
         head.appendChild(dlEl);
       }
+    }
+    if(likedBadge){
+      var lk = document.createElement('span');
+      lk.className = 'likedtag';
+      lk.textContent = 'Liked';
+      head.appendChild(lk);
     }
 
     var h = document.createElement('h4');
@@ -737,11 +766,12 @@
     if(!state.quizzes.length){
       var p = document.createElement('p');
       p.className = 'none';
-      p.textContent = 'Tidak ada kuis yang belum dikerjakan.';
+      p.textContent = 'Tidak ada kuis atau tugas yang belum dikerjakan.';
       box.appendChild(p);
       return;
     }
     state.quizzes.forEach(function(q){
+      var isQuiz = !!q.quiz;
       var row = document.createElement('div');
       row.className = 'quiz';
 
@@ -749,16 +779,20 @@
       main.className = 'qmain';
       var t = document.createElement('div');
       t.className = 'qtitle';
-      t.textContent = q.post.title || 'Kuis';
+      t.textContent = q.post.title || (isQuiz ? 'Kuis' : 'Tugas');
       var m = document.createElement('div');
       m.className = 'qmeta';
       var bits = [q.group.name];
-      if(q.quiz.questionsCount) bits.push(q.quiz.questionsCount + ' soal');
-      if(q.quiz.duration) bits.push(Math.round(Number(q.quiz.duration)/60) + ' menit');
+      if(isQuiz){
+        if(q.quiz.questionsCount) bits.push(q.quiz.questionsCount + ' soal');
+        if(q.quiz.duration) bits.push(Math.round(Number(q.quiz.duration)/60) + ' menit');
+      }else{
+        bits.push(TYPES[String(q.post.type)] || 'Tugas');
+      }
       m.textContent = bits.join(' · ');
       main.appendChild(t); main.appendChild(m);
 
-      var dl = quizDeadline(q.post);
+      var dl = isQuiz ? quizDue(q.quiz) : taskDeadline(q.post);
       if(dl){
         var d = document.createElement('div');
         d.className = 'qmeta deadline';
@@ -767,9 +801,11 @@
       }
 
       var a = document.createElement('a');
-      a.href = edlinkLink('https://kuliah.unsia.ac.id/panel/classes/' + q.group.id + '/quizes');
+      a.href = edlinkLink(isQuiz
+        ? 'https://kuliah.unsia.ac.id/panel/classes/' + q.group.id + '/quizes'
+        : postLink(q.post));
       if(!IS_ANDROID){ a.target = '_blank'; a.rel = 'noopener'; }
-      a.textContent = 'Kerjakan';
+      a.textContent = isQuiz ? 'Kerjakan' : 'Buka';
 
       row.appendChild(main); row.appendChild(a);
       box.appendChild(row);
@@ -802,7 +838,7 @@
     }
 
     if(String(p.type) === 'Z'){
-      var dl = quizDeadline(p);
+      var dl = quizDue(p.quiz);
       if(dl){
         var ddl = document.createElement('span');
         ddl.className = 'mdate' + (quizDone(p.quiz) ? '' : ' deadline');
@@ -810,6 +846,13 @@
           fmtDateTime(dl);
         b.appendChild(ddl);
       }
+    }
+
+    if(state.likeTab === 'all' && isLiked(p)){
+      var lk = document.createElement('span');
+      lk.className = 'mliked';
+      lk.textContent = 'Liked';
+      b.appendChild(lk);
     }
 
     b.addEventListener('click', function(){ openPost(p); });
@@ -829,7 +872,8 @@
     var tabs = document.createElement('div');
     tabs.className = 'tabs';
     [ { id:'unliked', label:'Belum di-like', n:state.posts.length - likedN },
-      { id:'liked',   label:'Sudah di-like', n:likedN } ].forEach(function(t){
+      { id:'all',     label:'All',            n:state.posts.length },
+      { id:'liked',   label:'Sudah di-like',  n:likedN } ].forEach(function(t){
       var tb = document.createElement('button');
       tb.type = 'button';
       tb.className = 'tab' + (state.likeTab === t.id ? ' active' : '');
@@ -849,7 +893,9 @@
     box.appendChild(tabs);
 
     var rows = state.posts.filter(function(p){
-      return state.likeTab === 'liked' ? isLiked(p) : !isLiked(p);
+      if(state.likeTab === 'liked') return isLiked(p);
+      if(state.likeTab === 'unliked') return !isLiked(p);
+      return true;   // tab All
     });
 
     // Kuis selalu di atas, sisanya urut terbaru.
@@ -881,16 +927,13 @@
       return;
     }
 
-    // Urutan kelas: yang punya materi di tab aktif dulu, lalu yang isinya
-    // paling banyak, lalu yang paling baru.
+    // Angka di samping nama kelas mengikuti tab aktif, dan urutannya juga.
     function latest(items){
       return items.reduce(function(m,p){ return Math.max(m, p.createdAt||0); }, 0);
     }
     var entries = Array.from(byGroup.entries())
       .sort(function(a,b){
-        var ea = a[1].items.length ? 1 : 0;
-        var eb = b[1].items.length ? 1 : 0;
-        return (eb - ea) ||
+        return (b[1].items.length - a[1].items.length) ||
                (b[1].total - a[1].total) ||
                (latest(b[1].items) - latest(a[1].items));
       });
@@ -907,7 +950,7 @@
       h.appendChild(gn);
       var n = document.createElement('span');
       n.className = 'n';
-      n.textContent = entry[1].total;
+      n.textContent = entry[1].items.length;
       h.appendChild(n);
       sec.appendChild(h);
 
@@ -919,7 +962,9 @@
         none.textContent = 'Belum ada postingan pada rentang ini.';
         rail.appendChild(none);
       }
-      entry[1].items.forEach(function(p){ rail.appendChild(postCard(p)); });
+      entry[1].items.forEach(function(p){
+        rail.appendChild(postCard(p, state.likeTab === 'all' && isLiked(p)));
+      });
       sec.appendChild(rail);
       box.appendChild(sec);
     });
@@ -942,7 +987,7 @@
       b.appendChild(nm);
       var n = document.createElement('span');
       n.className = 'n';
-      n.textContent = entry[1].total;
+      n.textContent = entry[1].items.length;
       b.appendChild(n);
       b.addEventListener('click', function(){
         state.groupSel = entry[0];
@@ -1000,6 +1045,9 @@
         var post = Object.assign({}, p, { group: { id:g.id, name:g.name } });
         if(p.type === 'Z' && p.quiz && !quizDone(p.quiz)){
           quizzes.push({ post:post, quiz:p.quiz, group:{ id:g.id, name:g.name } });
+        }else if((String(p.type) === 'Q' || String(p.type) === '1') &&
+                 p.teacherQuestion && !taskDone(p.teacherQuestion)){
+          quizzes.push({ post:post, task:p.teacherQuestion, group:{ id:g.id, name:g.name } });
         }
         if((p.createdAt || 0) >= cutoff) posts.push(post);
       });
