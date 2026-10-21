@@ -118,10 +118,13 @@
          color:var(--muted);font-size:13.5px}
   .loading{color:var(--muted);font-size:13.5px;text-align:center;padding:40px 0}
 
-  /* ---------- pratinjau berkas ---------- */
-  #viewer{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.55);display:flex;
+  /* ---------- pratinjau berkas & detail postingan ---------- */
+  #viewer,#postModal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.55);display:flex;
           align-items:center;justify-content:center;padding:18px}
-  #viewer[hidden]{display:none}
+  #viewer[hidden],#postModal[hidden]{display:none}
+  #viewer{z-index:55} /* pratinjau berkas bisa dibuka dari detail postingan */
+  .modal-body{flex:1;min-height:0;padding:14px 16px 16px;overflow:auto}
+  .modal-body .post{margin:0}
   .viewer-card{width:100%;max-width:900px;max-height:92vh;display:flex;flex-direction:column;
                background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
   .viewer-head{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line)}
@@ -155,9 +158,22 @@
     .tabs{overflow-x:auto;scrollbar-width:none}
     .tabs::-webkit-scrollbar{display:none}
     .pfoot{gap:5px 10px}
-    #viewer{padding:0}
+
+    /* per mata kuliah: judul saja, geser ke samping, klik untuk detail */
+    .rail{display:flex;gap:9px;overflow-x:auto;scroll-snap-type:x proximity;
+          margin:0 -14px;padding:2px 14px 4px;-webkit-overflow-scrolling:touch;
+          scrollbar-width:none}
+    .rail::-webkit-scrollbar{display:none}
+    .post-mini{flex:0 0 76%;margin:0;padding:13px 15px;text-align:left;color:var(--ink);
+               font-weight:600;font-size:14.5px;line-height:1.35;overflow-wrap:anywhere;
+               display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
+               overflow:hidden;scroll-snap-align:start}
+    .post-mini:active{border-color:var(--ink)}
+
+    #viewer,#postModal{padding:0}
     .viewer-card{max-width:none;max-height:none;height:100%;border:0;border-radius:0}
     .viewer-body iframe{height:calc(100vh - 118px)}
+    .modal-body{padding:12px 14px 18px}
   }
 </style>
 </head>
@@ -230,6 +246,17 @@
   </div>
 </div>
 
+<!-- ================= DETAIL POSTINGAN (MOBILE) ================= -->
+<div id="postModal" hidden>
+  <div class="viewer-card" role="dialog" aria-modal="true" aria-labelledby="pmTitle">
+    <div class="viewer-head">
+      <span class="name" id="pmTitle"></span>
+      <button class="btn-ghost" id="pmClose" type="button">Tutup</button>
+    </div>
+    <div class="modal-body" id="pmBody"></div>
+  </div>
+</div>
+
 <script>
 (function(){
   'use strict';
@@ -254,6 +281,8 @@
   var state = { tab:'unliked', posts:[], groups:[], quizzes:[], user:null };
 
   var $ = function(id){ return document.getElementById(id); };
+  var mqMobile = window.matchMedia('(max-width:640px)');
+  function isMobile(){ return mqMobile.matches; }
 
   /* ---------------- helpers ---------------- */
 
@@ -445,7 +474,24 @@
   function closeViewer(){
     $('viewerBody').textContent = '';
     $('viewer').hidden = true;
-    document.body.style.overflow = '';
+    document.body.style.overflow = $('postModal').hidden ? '' : 'hidden';
+  }
+
+  // Detail postingan: di mobile tiap mata kuliah hanya menampilkan judul,
+  // detail lengkapnya (deskripsi, berkas, like) muncul di sini saat judul diklik.
+  function openPost(p){
+    var box = $('pmBody');
+    box.textContent = '';
+    $('pmTitle').textContent = (p.group && p.group.name) || 'Detail postingan';
+    box.appendChild(postCard(p));
+    $('postModal').hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closePost(){
+    $('pmBody').textContent = '';
+    $('postModal').hidden = true;
+    document.body.style.overflow = $('viewer').hidden ? '' : 'hidden';
   }
 
   var toastTimer = null;
@@ -673,6 +719,15 @@
     });
   }
 
+  function postMini(p){
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'post post-mini';
+    b.textContent = p.title || '(tanpa judul)';
+    b.addEventListener('click', function(){ openPost(p); });
+    return b;
+  }
+
   function renderPosts(){
     var box = $('posts');
     box.textContent = '';
@@ -699,6 +754,8 @@
       byGroup.get(p.groupId).items.push(p);
     });
 
+    var mobile = isMobile();
+
     Array.from(byGroup.entries())
       .sort(function(a,b){
         return (b[1].items[0].createdAt||0) - (a[1].items[0].createdAt||0);
@@ -709,7 +766,13 @@
         var h = document.createElement('h3');
         h.textContent = entry[1].name;
         sec.appendChild(h);
-        entry[1].items.forEach(function(p){ sec.appendChild(postCard(p)); });
+
+        var rail = document.createElement('div');
+        rail.className = 'rail';
+        entry[1].items.forEach(function(p){
+          rail.appendChild(mobile ? postMini(p) : postCard(p));
+        });
+        sec.appendChild(rail);
         box.appendChild(sec);
       });
   }
@@ -862,8 +925,17 @@
 
   $('viewerClose').addEventListener('click', closeViewer);
   $('viewer').addEventListener('click', function(ev){ if(ev.target === $('viewer')) closeViewer(); });
+  $('pmClose').addEventListener('click', closePost);
+  $('postModal').addEventListener('click', function(ev){ if(ev.target === $('postModal')) closePost(); });
   document.addEventListener('keydown', function(ev){
-    if(ev.key === 'Escape' && !$('viewer').hidden) closeViewer();
+    if(ev.key !== 'Escape') return;
+    if(!$('viewer').hidden) closeViewer();
+    else if(!$('postModal').hidden) closePost();
+  });
+
+  // Ganti orientasi/lebar layar: render ulang bentuk kartu (mini vs lengkap).
+  mqMobile.addEventListener('change', function(){
+    if(state.groups.length) renderPosts();
   });
 
   // PWA: cache app shell untuk pemakaian offline (hanya di http/https)
