@@ -194,9 +194,6 @@
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         <span>Beranda</span>
       </a>
-      <a href="answer.html" class="back" style="display:inline-flex;align-items:center;gap:4px">
-        <span>Jawaban ↗</span>
-      </a>
       <h1>Folder Berkas</h1>
     </div>
     <div class="view-toggle" role="tablist" aria-label="Mode Tampilan">
@@ -326,7 +323,9 @@
   'use strict';
   var LOCAL = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || location.protocol === 'file:';
   var BASE  = LOCAL ? 'https://kuliah.unsia.ac.id/api/v1.4' : '/api/v1.4';
+  var APP_ID = '031068';
   var KEY   = 'edlink_apikey';
+  var CRED  = 'edlink_creds';
 
   var token = '';
   var transferKey = sessionStorage.getItem('edlink_transfer_key');
@@ -337,14 +336,82 @@
     sessionStorage.removeItem('edlink_transfer_key');
     sessionStorage.removeItem('edlink_transfer_from');
     sessionStorage.removeItem('edlink_transfer_time');
-  }else if(sessionStorage.getItem('edlink_files_authorized')){
+  }else{
     token = sessionStorage.getItem('edlink_active_token') || localStorage.getItem(KEY) || '';
   }
 
-  if(!token){
+  function getCreds(){
+    try{
+      var raw = localStorage.getItem(CRED);
+      if(!raw) return null;
+      var o = JSON.parse(atob(raw));
+      return (o && o.u && o.p) ? o : null;
+    }catch(e){ return null; }
+  }
+
+  function findToken(obj, depth){
+    depth = depth || 0;
+    if(!obj || typeof obj !== 'object' || depth > 3) return null;
+    if(typeof obj.token === 'string' && obj.token.length >= 20) return obj.token;
+    var keys = ['userToken','member','user','account'];
+    for(var i = 0; i < keys.length; i++){
+      var t = findToken(obj[keys[i]], depth + 1);
+      if(t) return t;
+    }
+    return null;
+  }
+
+  var reloginPromise = null;
+  function tryRelogin(){
+    if(reloginPromise) return reloginPromise;
+    reloginPromise = (async function(){
+      var creds = getCreds();
+      if(!creds) return false;
+      try{
+        var device = JSON.stringify({
+          secureId: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())),
+          name: 'Chrome', manufacture: 'Google', model: 'Chrome', product: 'Chrome',
+          hardware: 'Linux', version: (navigator.userAgent.match(/Chrome\/([\d.]+)/) || [])[1] || '',
+          regId: null
+        });
+        var res = await fetch(BASE + '/site/login', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-App-Locale': 'id',
+            'X-Referer': 'https://kuliah.unsia.ac.id/'
+          },
+          body: JSON.stringify({
+            username: creds.u, app_id: APP_ID, email: '', password: creds.p,
+            web_reg_id: null, device: device
+          })
+        });
+        var json = await res.json();
+        var sys = (json && json.applicationSystem) || {};
+        var tok = (json && json.data && json.data.userToken && json.data.userToken.token) || findToken(json && json.data);
+        if(sys.code === 0 && tok){
+          token = tok;
+          try{
+            localStorage.setItem(KEY, token);
+            sessionStorage.setItem('edlink_active_token', token);
+            sessionStorage.setItem('edlink_files_authorized', '1');
+          }catch(e){}
+          return true;
+        }
+      }catch(e){}
+      return false;
+    })().finally(function(){
+      reloginPromise = null;
+    });
+    return reloginPromise;
+  }
+
+  if(!token && !getCreds()){
     location.replace('index.html');
     return;
   }
+
   var state = {
     groups: [],
     posts: [],
@@ -377,6 +444,13 @@
   }
 
   async function api(path, body){
+    if(!token){
+      var ok = await tryRelogin();
+      if(!ok){
+        location.replace('index.html');
+        throw new Error('Sesi berakhir.');
+      }
+    }
     var headers = {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -384,17 +458,45 @@
       'X-Referer': 'https://kuliah.unsia.ac.id/'
     };
     if(token) headers['Authorization'] = 'Bearer ' + token;
-    var res = await fetch(BASE + path, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(body || {})
-    });
-    var json = await res.json();
+    var res, json;
+    try{
+      res = await fetch(BASE + path, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(body || {})
+      });
+      json = await res.json();
+    }catch(err){
+      location.replace('index.html');
+      throw err;
+    }
     if(json && json.applicationSystem && json.applicationSystem.code === 2){
+      var ok2 = await tryRelogin();
+      if(ok2){
+        headers['Authorization'] = 'Bearer ' + token;
+        try{
+          res = await fetch(BASE + path, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(body || {})
+          });
+          json = await res.json();
+          if(!json || (json.applicationSystem && json.applicationSystem.code === 2)){
+            location.replace('index.html');
+            throw new Error('Sesi berakhir.');
+          }
+          return json;
+        }catch(err){
+          location.replace('index.html');
+          throw err;
+        }
+      }
+      location.replace('index.html');
       throw new Error('Sesi berakhir atau token tidak valid.');
     }
     return json;
   }
+
 
   function driveId(url){
     if(!url) return '';
@@ -929,9 +1031,7 @@
       state.items = extractItems(allPosts);
       renderTree();
     }catch(err){
-      $('folderContainer').innerHTML = '<div class="empty-state">Gagal memuat berkas: ' +
-        (err.message || err) + '<br><br><button class="btn-primary" onclick="location.reload()">Muat Ulang</button></div>';
-      $('statText').textContent = 'Terjadi kesalahan autentikasi.';
+      location.replace('index.html');
     }
   }
   function updateModeButtons(){

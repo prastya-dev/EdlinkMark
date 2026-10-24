@@ -1,4 +1,4 @@
-var CACHE = 'edlinkmark-v6';
+var CACHE = 'edlinkmark-v7';
 var SHELL = ['./', './index.html', './files.html', './answer.html', './example.docx', './jszip.min.js', './manifest.webmanifest',
              './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 
