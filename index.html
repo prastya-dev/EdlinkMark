@@ -77,11 +77,6 @@
   .tab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
   .tab .count{color:var(--muted);font-weight:400;font-size:12px;margin-left:4px}
 
-  .group{margin-bottom:26px}
-  .group h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
-            margin:0 0 9px;font-weight:600;display:flex;align-items:baseline;gap:5px}
-  .group h3 .gname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .group h3 .n{font-weight:600;margin-left:0;flex:0 0 auto}
   .deadline{color:#c62828;font-weight:600}
   .post{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 17px;margin-bottom:10px}
   .phead{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-bottom:7px;font-size:12px;color:var(--muted)}
@@ -106,6 +101,61 @@
       padding:6px 11px;font-size:12.5px;white-space:nowrap}
   .dl:hover{background:var(--ink);color:#fff}
   .dl:disabled{opacity:.5}
+
+
+  /* ---------- rail kelas & kartu postingan ---------- */
+  .rail{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x proximity;
+        margin:0 0 14px;padding:2px 0 6px;-webkit-overflow-scrolling:touch;
+        scrollbar-width:none}
+  .rail::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;display:flex;align-items:center;max-width:72vw;border:1px solid var(--line);background:var(--card);
+        color:var(--muted);border-radius:999px;padding:7px 13px;font-size:12.5px;
+        font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+        scroll-snap-align:start}
+  .chip:hover{border-color:var(--ink);color:var(--ink)}
+  .chip .cname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .chip.active{background:var(--ink);border-color:var(--ink);color:#fff}
+  .chip .n{opacity:.6;font-weight:500;margin-left:4px;flex:0 0 auto}
+  .plist{display:flex;flex-direction:column;gap:8px}
+  .post-mini{width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:7px;position:relative;
+             margin:0;padding:12px 15px;text-align:left;color:var(--ink)}
+  .post-mini:hover{border-color:var(--ink);background:var(--soft)}
+  .post-mini .mliked{position:absolute;top:9px;right:12px;font-style:italic;font-weight:600;
+                     color:#186b33;font-size:11px}
+  .post-mini .mtitle{font-weight:600;font-size:14.5px;line-height:1.35;
+                     overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;
+                     -webkit-box-orient:vertical;overflow:hidden}
+  .post-mini .mdate{font-size:11.5px;color:var(--muted)}
+  .post-mini:active{border-color:var(--ink)}
+  .post-mini.quiz{background:#f1faf3;border-color:#c2e5cb}
+  .post-mini.quiz:hover{background:#e7f5eb;border-color:#9fd6ad}
+  .post-mini.quiz .badge{background:#e0f4e6;border-color:#c2e5cb;color:#186b33}
+  .post-mini.quiz .mdate{color:#557f61}
+  .post-mini.quiz .mdate.deadline{color:#c62828}
+  /* ---------- folder lampiran ---------- */
+  #mainTabs{margin-bottom:20px}
+  #mainTabs .tab{font-size:14px}
+  .folderbar{display:flex;gap:8px;margin:0 0 16px}
+  #folderSearch{flex:1;min-width:0;padding:9px 12px;border:1px solid var(--line);border-radius:9px;
+                background:var(--card);color:var(--ink);font-size:13.5px;outline:none}
+  #folderSearch:focus{border-color:var(--ink)}
+  .course{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:12px}
+  .course>summary,.sess>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px}
+  .course>summary::-webkit-details-marker,.sess>summary::-webkit-details-marker{display:none}
+  .course>summary{padding:12px 15px;font-weight:600;font-size:14px}
+  .course>summary::before,.sess>summary::before{content:'▸';color:var(--muted);font-size:10px;
+          flex:0 0 auto;transition:transform .15s}
+  .course[open]>summary::before,.sess[open]>summary::before{transform:rotate(90deg)}
+  .course>summary .cname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .course>summary .ccode{color:var(--muted);font-weight:400;font-size:11.5px;flex:0 0 auto}
+  .course>summary .n,.sess>summary .n{margin-left:auto;color:var(--muted);font-weight:400;
+          font-size:12px;flex:0 0 auto}
+  .sessions{padding:0 13px 6px}
+  .sess{border-top:1px solid var(--line)}
+  .sess>summary{padding:9px 2px;font-size:12.5px;color:var(--muted)}
+  .sess>summary .sname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sess .files{margin-top:0;padding:0 0 11px}
+  .sess .files .file{background:var(--soft)}
   .pfoot{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-top:13px;
          padding-top:11px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
   .pfoot .open{margin-left:auto;text-decoration:none;font-size:12.5px;color:var(--ink);
@@ -154,35 +204,7 @@
     .post h4{font-size:15.5px}
     .pfoot{gap:5px 10px}
 
-    /* nama kelas geser ke samping, judul postingan ke bawah, klik judul untuk detail */
-    .rail{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x proximity;
-          margin:0 -14px 12px;padding:2px 14px 4px;-webkit-overflow-scrolling:touch;
-          scrollbar-width:none}
-    .rail::-webkit-scrollbar{display:none}
-    .chip{flex:0 0 auto;display:flex;align-items:center;max-width:72vw;border:1px solid var(--line);background:var(--card);
-          color:var(--muted);border-radius:999px;padding:7px 13px;font-size:12.5px;
-          font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-          scroll-snap-align:start}
-    .chip .cname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .chip.active{background:var(--ink);border-color:var(--ink);color:#fff}
-    .chip .n{opacity:.6;font-weight:500;margin-left:4px;flex:0 0 auto}
-    .plist{display:flex;flex-direction:column;gap:8px}
-    /* kartu judul: jenis postingan di atas, judul, tanggal di bawah */
-    .post-mini{display:flex;flex-direction:column;align-items:flex-start;gap:7px;position:relative;
-               margin:0;padding:12px 15px;text-align:left;color:var(--ink)}
-    .post-mini .mliked{position:absolute;top:9px;right:12px;font-style:italic;font-weight:600;
-                       color:#186b33;font-size:11px}
-    .post-mini .mtitle{font-weight:600;font-size:14.5px;line-height:1.35;
-                       overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;
-                       -webkit-box-orient:vertical;overflow:hidden}
-    .post-mini .mdate{font-size:11.5px;color:var(--muted)}
-    .post-mini:active{border-color:var(--ink)}
-    /* kuis dibedakan dengan warna hijau */
-    .post-mini.quiz{background:#f1faf3;border-color:#c2e5cb}
-    .post-mini.quiz .badge{background:#e0f4e6;border-color:#c2e5cb;color:#186b33}
-    .post-mini.quiz .mdate{color:#557f61}
-    .post-mini.quiz .mdate.deadline{color:#c62828}
-
+    .rail{margin:0 -14px 12px;padding:2px 14px 4px}
     #viewer,#postModal{padding:0}
     .viewer-card{max-width:none;max-height:none;height:100%;border:0;border-radius:0}
     .viewer-body iframe{height:calc(100vh - 118px)}
@@ -230,12 +252,28 @@
       </div>
     </header>
 
-    <section class="block">
-      <h2>Kuis &amp; tugas belum dikerjakan</h2>
-      <div id="quizList"></div>
-    </section>
+    <nav class="tabs" id="mainTabs">
+      <button class="tab active" type="button" data-view="posts">Postingan</button>
+      <button class="tab" type="button" data-view="folder">Folder Lampiran<span class="count" id="folderCount"></span></button>
+    </nav>
 
-    <div id="posts"><div class="loading">Memuat…</div></div>
+    <div id="viewPosts">
+      <section class="block">
+        <h2>Kuis &amp; tugas belum dikerjakan</h2>
+        <div id="quizList"></div>
+      </section>
+
+      <div id="posts"><div class="loading">Memuat…</div></div>
+    </div>
+
+    <div id="viewFolder" hidden>
+      <div class="tabs" id="catTabs"></div>
+      <div class="folderbar">
+        <input id="folderSearch" type="search" placeholder="Cari berkas, mata kuliah, atau sesi…">
+        <button class="btn-ghost" id="folderReload" type="button">Muat ulang</button>
+      </div>
+      <div id="folderTree"></div>
+    </div>
   </div>
 </main>
 
@@ -254,7 +292,7 @@
   </div>
 </div>
 
-<!-- ================= DETAIL POSTINGAN (MOBILE) ================= -->
+<!-- ================= DETAIL POSTINGAN ================= -->
 <div id="postModal" hidden>
   <div class="viewer-card" role="dialog" aria-modal="true" aria-labelledby="pmTitle">
     <div class="viewer-head">
@@ -287,14 +325,19 @@
 
   var token = localStorage.getItem(KEY) || '';
   var state = { posts:[], groups:[], quizzes:[], user:null, groupSel:null, postTotals:{},
-                likeTab:'unliked', railScroll:0 };
+                likeTab:'unliked', railScroll:0, view:'posts',
+                folder:{ cat:'materi', q:'', loaded:false, items:[] } };
+
+  // Tab folder: materi (termasuk video), tugas (tugas/kuis/ujian), sisanya other.
+  var CATS = [ ['materi','Materi'], ['tugas','Tugas'], ['other','Other'] ];
+  var CAT_OF = { M:'materi', V:'materi', H:'materi',
+                 Q:'tugas', '1':'tugas', Z:'tugas', '2':'tugas' };
+  function category(type){ return CAT_OF[String(type)] || 'other'; }
 
   // Status like berasal dari API EdLink (field `like` pada postingan).
   function isLiked(p){ return !!(p && p.like); }
 
   var $ = function(id){ return document.getElementById(id); };
-  var mqMobile = window.matchMedia('(max-width:640px)');
-  function isMobile(){ return mqMobile.matches; }
 
   /* ---------------- helpers ---------------- */
 
@@ -498,7 +541,11 @@
   }
 
   function mediaUrl(m){
-    return (m.file && m.file.link) || m.link || '';
+    var f = (m.file && m.file.link) || '';
+    var l = m.link || '';
+    // youtube/tautan: `link` yang asli; `file.link` cuma cadangan yang sering mati.
+    if(/^(youtube|gdrive|drive|link)$/i.test(String(m.type || ''))) return l || f;
+    return f || l;
   }
   function mediaExt(m, url){
     var f = m.file || {};
@@ -533,6 +580,14 @@
     return m ? m[1] : '';
   }
 
+  // GCS EdLink menyajikan hampir semua berkas sebagai .backup dengan tipe
+  // application/octet-stream, jadi pratinjau butuh blob ber-MIME asli.
+  var viewSeq = 0, viewBlob = '';
+  function hasExt(url, ext){
+    return new RegExp('\\.' + ext.replace(/[^a-z0-9]/g, '') + '$', 'i')
+      .test(url.split(/[?#]/)[0]);
+  }
+
   function openViewer(m){
     var url = mediaUrl(m);
     if(!url){ toast('Berkas ini tidak punya tautan.'); return; }
@@ -544,7 +599,7 @@
     body.textContent = '';
     $('viewerName').textContent = m.name || 'Berkas';
 
-    var el = null;
+    var el = null, src = url, blobable = false;
     if(yt){
       el = document.createElement('iframe');
       el.src = 'https://www.youtube.com/embed/' + yt + '?rel=0';
@@ -556,27 +611,43 @@
       el.src = 'https://drive.google.com/file/d/' + gd + '/preview';
       el.title = m.name || 'Video';
     }else if(/^(png|jpe?g|gif|webp|svg|bmp|avif)$/.test(ext)){
-      el = document.createElement('img'); el.src = url; el.alt = m.name || '';
+      el = document.createElement('img'); el.alt = m.name || ''; blobable = true;
     }else if(ext === 'pdf'){
       el = document.createElement('iframe');
-      // Chrome Android tidak punya penampil PDF bawaan untuk iframe.
-      el.src = IS_ANDROID
-        ? 'https://docs.google.com/gview?embedded=true&url=' + encodeURIComponent(url)
-        : url;
       el.title = m.name || 'PDF';
+      // Chrome Android tidak punya penampil PDF bawaan untuk iframe.
+      if(IS_ANDROID) src = 'https://docs.google.com/gview?embedded=true&url=' + encodeURIComponent(url);
+      else blobable = true;
     }else if(/^(mp4|webm|ogv|mov|m4v)$/.test(ext)){
-      el = document.createElement('video'); el.src = url; el.controls = true; el.playsInline = true;
+      el = document.createElement('video'); el.controls = true; el.playsInline = true; blobable = true;
     }else if(/^(mp3|wav|m4a|aac|oga|ogg)$/.test(ext)){
-      el = document.createElement('audio'); el.src = url; el.controls = true;
+      el = document.createElement('audio'); el.controls = true; blobable = true;
     }else if(/^(docx?|pptx?|xlsx?|odt|ods|odp|rtf)$/.test(ext)){
       // Office tidak bisa dirender browser; pakai penampil Google seperti web EdLink.
       el = document.createElement('iframe');
-      el.src = 'https://docs.google.com/gview?embedded=true&url=' + encodeURIComponent(url);
+      src = 'https://docs.google.com/gview?embedded=true&url=' + encodeURIComponent(url);
       el.title = m.name || 'Dokumen';
     }
 
+    var seq = ++viewSeq;
+    if(viewBlob){ URL.revokeObjectURL(viewBlob); viewBlob = ''; }
+
     if(el){
       body.appendChild(el);
+      if(blobable && !hasExt(url, ext)){
+        fetch(url).then(function(r){
+          if(!r.ok) throw new Error('HTTP ' + r.status);
+          return r.blob();
+        }).then(function(b){
+          if(seq !== viewSeq) return;
+          viewBlob = URL.createObjectURL(new Blob([b], { type: m.mime || 'application/octet-stream' }));
+          el.src = viewBlob;
+        }).catch(function(){
+          if(seq === viewSeq) el.src = url;
+        });
+      }else{
+        el.src = src;
+      }
     }else{
       var p = document.createElement('p');
       p.className = 'nopreview';
@@ -591,7 +662,9 @@
   }
 
   function closeViewer(){
+    viewSeq++;
     $('viewerBody').textContent = '';
+    if(viewBlob){ URL.revokeObjectURL(viewBlob); viewBlob = ''; }
     $('viewer').hidden = true;
     document.body.style.overflow = $('postModal').hidden ? '' : 'hidden';
   }
@@ -665,6 +738,30 @@
     $('loginErr').firstChild.appendChild(btn);
   }
 
+  // Satu baris berkas: dipakai di kartu postingan dan di tab Folder Lampiran.
+  function fileRow(m){
+    var url = mediaUrl(m);
+    var row = document.createElement('div');
+    row.className = 'file';
+    var main = document.createElement('div');
+    main.className = 'fmain';
+    var nm = document.createElement('div'); nm.className = 'fname'; nm.textContent = m.name || 'Berkas';
+    var mt = document.createElement('div'); mt.className = 'fmeta';
+    mt.textContent = [ (m.extension||'').toUpperCase(), fmtSize(m.size) ].filter(Boolean).join(' · ');
+    main.appendChild(nm); main.appendChild(mt);
+    var acts = document.createElement('div');
+    acts.className = 'facts';
+    var view = document.createElement('button');
+    view.className = 'dl'; view.type = 'button'; view.textContent = 'Lihat';
+    view.addEventListener('click', function(){ openViewer(m); });
+    var btn = document.createElement('button');
+    btn.className = 'dl'; btn.type = 'button'; btn.textContent = 'Unduh';
+    btn.addEventListener('click', function(){ downloadFile(url, m.name, btn); });
+    acts.appendChild(view); acts.appendChild(btn);
+    row.appendChild(main); row.appendChild(acts);
+    return row;
+  }
+
   function postCard(p, likedBadge){
     var el = document.createElement('article');
     el.className = 'post';
@@ -714,28 +811,7 @@
     if(medias.length){
       var wrap = document.createElement('div');
       wrap.className = 'files';
-      medias.forEach(function(m){
-        var url = mediaUrl(m);
-        var row = document.createElement('div');
-        row.className = 'file';
-        var main = document.createElement('div');
-        main.className = 'fmain';
-        var nm = document.createElement('div'); nm.className = 'fname'; nm.textContent = m.name || 'Berkas';
-        var mt = document.createElement('div'); mt.className = 'fmeta';
-        mt.textContent = [ (m.extension||'').toUpperCase(), fmtSize(m.size) ].filter(Boolean).join(' · ');
-        main.appendChild(nm); main.appendChild(mt);
-        var acts = document.createElement('div');
-        acts.className = 'facts';
-        var view = document.createElement('button');
-        view.className = 'dl'; view.type = 'button'; view.textContent = 'Lihat';
-        view.addEventListener('click', function(){ openViewer(m); });
-        var btn = document.createElement('button');
-        btn.className = 'dl'; btn.type = 'button'; btn.textContent = 'Unduh';
-        btn.addEventListener('click', function(){ downloadFile(url, m.name, btn); });
-        acts.appendChild(view); acts.appendChild(btn);
-        row.appendChild(main); row.appendChild(acts);
-        wrap.appendChild(row);
-      });
+      medias.forEach(function(m){ wrap.appendChild(fileRow(m)); });
       el.appendChild(wrap);
     }
 
@@ -862,10 +938,8 @@
   function renderPosts(){
     var box = $('posts');
     // Simpan posisi geser rail kelas: render ulang tidak boleh balik ke awal.
-    if(isMobile()){
-      var oldRail = box.querySelector('.rail');
-      if(oldRail) state.railScroll = oldRail.scrollLeft;
-    }
+    var oldRail = box.querySelector('.rail');
+    if(oldRail) state.railScroll = oldRail.scrollLeft;
     box.textContent = '';
 
     var likedN = state.posts.filter(isLiked).length;
@@ -938,40 +1012,10 @@
                (latest(b[1].items) - latest(a[1].items));
       });
 
-    if(isMobile()){ paintMobile(box, entries); return; }
-
-    entries.forEach(function(entry){
-      var sec = document.createElement('section');
-      sec.className = 'group';
-      var h = document.createElement('h3');
-      var gn = document.createElement('span');
-      gn.className = 'gname';
-      gn.textContent = entry[1].name;
-      h.appendChild(gn);
-      var n = document.createElement('span');
-      n.className = 'n';
-      n.textContent = entry[1].items.length;
-      h.appendChild(n);
-      sec.appendChild(h);
-
-      var rail = document.createElement('div');
-      rail.className = 'rail';
-      if(!entry[1].items.length){
-        var none = document.createElement('p');
-        none.className = 'none';
-        none.textContent = 'Belum ada postingan pada rentang ini.';
-        rail.appendChild(none);
-      }
-      entry[1].items.forEach(function(p){
-        rail.appendChild(postCard(p, state.likeTab === 'all' && isLiked(p)));
-      });
-      sec.appendChild(rail);
-      box.appendChild(sec);
-    });
+    paintPosts(box, entries);
   }
 
-  // Mobile: nama kelas jadi rail yang digeser ke samping, judul postingan turun ke bawah.
-  function paintMobile(box, entries){
+  function paintPosts(box, entries){
     var sel = entries.filter(function(e){ return e[0] === state.groupSel; })[0] || entries[0];
     state.groupSel = sel[0];
 
@@ -1166,10 +1210,6 @@
     else if(!$('postModal').hidden) closePost();
   });
 
-  // Ganti orientasi/lebar layar: render ulang bentuk kartu (mini vs lengkap).
-  mqMobile.addEventListener('change', function(){
-    if(state.groups.length) renderPosts();
-  });
 
   // PWA: cache app shell untuk pemakaian offline (hanya di http/https)
   if('serviceWorker' in navigator && location.protocol.indexOf('http') === 0){
