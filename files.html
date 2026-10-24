@@ -98,7 +98,7 @@
   .course-head::before{content:'▸';font-size:11px;color:var(--muted);transition:transform .15s}
   details[open].course-card>.course-head::before{transform:rotate(90deg)}
   .course-head .cname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .course-head .cmeta{font-size:12px;color:var(--muted);font-weight:400}
+  .course-head .cmeta{font-size:12px;color:var(--muted);font-weight:400;flex-shrink:0;white-space:nowrap}
 
   .course-body{border-top:1px solid var(--line);padding:8px 12px 12px;background:#fcfcfb;display:flex;flex-direction:column;gap:8px}
   .sess-card{background:var(--card);border:1px solid var(--line);border-radius:9px;overflow:hidden}
@@ -107,7 +107,8 @@
   .sess-head::-webkit-details-marker{display:none}
   .sess-head::before{content:'▸';font-size:10px;color:var(--muted);transition:transform .15s}
   details[open].sess-card>.sess-head::before{transform:rotate(90deg)}
-  .sess-head .smeta{font-size:11.5px;color:var(--muted);font-weight:400}
+  .sess-head .sname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sess-head .smeta{font-size:11.5px;color:var(--muted);font-weight:400;flex-shrink:0;white-space:nowrap}
 
   .sess-files{padding:4px 12px 10px;display:flex;flex-direction:column;gap:6px}
   .file-item{display:flex;align-items:center;justify-content:space-between;gap:12px;
@@ -133,18 +134,55 @@
   .modal-body{flex:1;overflow:auto;padding:14px 16px;background:var(--soft)}
   .modal-body iframe{width:100%;height:68vh;border:0;background:#fff;border-radius:6px}
   .modal-foot{display:flex;justify-content:flex-end;gap:8px;padding:10px 16px;border-top:1px solid var(--line);background:var(--card)}
-
-  /* Key Dialog */
-  .key-view{width:100%;font-family:monospace;font-size:12px;padding:10px;background:var(--soft);
-            border:1px solid var(--line);border-radius:8px;word-break:break-all;margin:10px 0}
   .empty-state{text-align:center;padding:36px 16px;color:var(--muted);font-size:13.5px}
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:99;
          background:var(--ink);color:#fff;padding:8px 14px;border-radius:8px;font-size:12.5px}
-  @media(max-width:600px){
-    .wrap{padding:16px 12px 60px}
-    .filters{grid-template-columns:1fr}
-    .modal-card{max-height:100vh;height:100%;border-radius:0}
-    .modal-body iframe{height:calc(100vh - 120px)}
+  /* View Mode Toggle */
+  .view-toggle{display:inline-flex;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:2px}
+  .view-btn{border:0;background:none;color:var(--muted);padding:5px 9px;border-radius:6px;font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+  .view-btn.active{background:var(--ink);color:#fff;font-weight:600}
+  .view-btn:not(.active):hover{color:var(--ink);background:var(--hover)}
+
+  /* Google Drive Folder Mode */
+  .gdrive-wrap{display:flex;flex-direction:column;gap:12px}
+  .gdrive-crumbs{display:flex;align-items:center;flex-wrap:wrap;gap:4px;padding:8px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;font-size:13px}
+  .gdrive-crumb-btn{border:0;background:none;padding:4px 6px;border-radius:6px;color:var(--accent);cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:4px}
+  .gdrive-crumb-btn:hover{background:var(--hover);text-decoration:underline}
+  .gdrive-crumb-sep{color:var(--muted);font-size:12px;user-select:none;padding:0 2px}
+  .gdrive-crumb-current{color:var(--ink);font-weight:600;padding:4px 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px;display:inline-flex;align-items:center;gap:4px}
+  .gdrive-section-title{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:4px 0 2px}
+  .gdrive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+  .gdrive-folder-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none;transition:border-color .15s,background .15s}
+  .gdrive-folder-card:hover{background:var(--hover);border-color:#bbb}
+  .gdrive-folder-icon{width:28px;height:28px;flex:0 0 28px;display:flex;align-items:center;justify-content:center}
+  .gdrive-folder-info{flex:1;min-width:0}
+  .gdrive-folder-name{font-size:13.5px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .gdrive-folder-meta{font-size:11.5px;color:var(--muted);margin-top:2px}
+
+  @media(max-width:640px){
+    .wrap{padding:14px 12px 50px}
+    .brand h1{font-size:18px}
+    .search-box{padding:10px 12px;margin-bottom:12px}
+    .filters{grid-template-columns:1fr;gap:8px}
+    .filter-chips .chip[data-chip="reset"]{margin-left:0}
+    .stats-bar{flex-direction:column;align-items:flex-start;gap:3px}
+    .tabs{gap:2px;margin-bottom:12px}
+    .tab{flex:1;justify-content:center;padding:9px 6px;font-size:13px}
+    .course-head{padding:10px 12px;font-size:13.5px}
+    .course-body{padding:6px 8px 10px;gap:6px}
+    .sess-head{padding:8px 10px;font-size:12.5px}
+    .sess-files{padding:4px 6px 8px;gap:6px}
+    .file-item{flex-direction:column;align-items:stretch;gap:8px;padding:9px 10px}
+    .file-actions{display:flex;width:100%;gap:6px;border-top:1px dashed var(--line);padding-top:6px}
+    .file-btn{flex:1;justify-content:center;padding:6px 10px}
+    .modal{padding:0}
+    .modal-card{max-height:100vh;height:100%;border:0;border-radius:0}
+    .modal-head{padding:10px 14px}
+    .modal-body{padding:10px 12px}
+    .modal-body iframe{height:calc(100dvh - 112px);height:calc(100vh - 112px)}
+    .modal-foot{padding:8px 12px}
+    .gdrive-grid{grid-template-columns:1fr;gap:8px}
+    .gdrive-crumb-current{max-width:160px}
   }
 </style>
 </head>
@@ -156,16 +194,19 @@
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         <span>Beranda</span>
       </a>
+      <a href="answer.html" class="back" style="display:inline-flex;align-items:center;gap:4px">
+        <span>Jawaban ↗</span>
+      </a>
       <h1>Folder Berkas</h1>
     </div>
-    <div class="actions">
-      <button class="btn-ghost" id="btnApiKey" type="button" style="display:inline-flex;align-items:center;gap:5px">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m21 3-9.5 9.5M15.5 7.5l3 3M18 5l2 2"/></svg>
-        <span>API Key</span>
+    <div class="view-toggle" role="tablist" aria-label="Mode Tampilan">
+      <button type="button" class="view-btn active" id="btnModeList" data-mode="list" role="tab" aria-selected="true" title="Mode List">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        <span>List</span>
       </button>
-      <button class="btn-ghost" id="btnSync" type="button" style="display:inline-flex;align-items:center;gap:5px">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
-        <span>Segarkan</span>
+      <button type="button" class="view-btn" id="btnModeFolder" data-mode="folder" role="tab" aria-selected="false" title="Mode Folder (Drive)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <span>Folder</span>
       </button>
     </div>
   </header>
@@ -279,30 +320,6 @@
   </div>
 </div>
 
-<!-- Modal API Key -->
-<div id="apiKeyModal" class="modal" hidden>
-  <div class="modal-card" style="max-width:480px">
-    <div class="modal-head">
-      <h3>Pengaturan API Key</h3>
-      <button class="btn-ghost" id="keyClose" type="button">Tutup</button>
-    </div>
-    <div class="modal-body" style="background:#fff">
-      <p style="font-size:13px;color:var(--muted);margin:0 0 8px">
-        API Key digunakan untuk otentikasi Bearer token ke endpoint EdLink:
-      </p>
-      <div id="keyBox" class="key-view">(Tidak ada API key)</div>
-      <div style="display:flex;gap:6px;margin-bottom:14px">
-        <button class="btn-ghost" id="btnToggleKey" type="button">Tampilkan</button>
-        <button class="btn-ghost" id="btnCopyKey" type="button">Salin</button>
-        <button class="btn-ghost" id="btnDlKey" type="button">Unduh apikey.txt</button>
-      </div>
-      <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
-      <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px">Ganti atau Masukkan Token Baru:</label>
-      <input type="text" id="newKeyInput" placeholder="Masukkan token Bearer..." style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;font-size:13px;outline:none;margin-bottom:8px">
-      <button class="btn-primary" id="btnSaveKey" type="button" style="width:100%">Simpan API Key</button>
-    </div>
-  </div>
-</div>
 
 <script>
 (function(){
@@ -340,7 +357,8 @@
     sort: 'sess-asc',
     onlyGdrive: false,
     allExpanded: false,
-    masked: true
+    viewMode: (localStorage.getItem('edlink_files_mode') === 'folder' ? 'folder' : 'list'),
+    folderPath: []
   };
 
   var CAT_OF = { M:'materi', V:'materi', H:'materi', Q:'tugas', '1':'tugas', Z:'tugas', '2':'tugas' };
@@ -761,6 +779,8 @@
     $('statText').textContent = isSearching
       ? ('Menemukan ' + list.length + ' berkas di semua folder')
       : ('Menampilkan ' + list.length + ' berkas');
+    updateModeButtons();
+
 
     if(!list.length){
       container.innerHTML = '<div class="empty-state">Tidak ada berkas yang cocok dengan pencarian / filter ini.</div>';
@@ -789,6 +809,12 @@
       container.appendChild(searchWrap);
       return;
     }
+    // JIKA MODE FOLDER (GDRIVE)
+    if(state.viewMode === 'folder'){
+      renderFolderMode(list, container);
+      return;
+    }
+
 
     // JIKA TIDAK SEDANG SEARCH: Tampilkan berjenjang Matakuliah -> Sesi
     var byCourse = {};
@@ -908,45 +934,220 @@
       $('statText').textContent = 'Terjadi kesalahan autentikasi.';
     }
   }
-
-  function updateKeyDisplay(){
-    var box = $('keyBox');
-    if(!token){ box.textContent = '(Belum ada API Key tersimpan)'; return; }
-    box.textContent = state.masked ? (token.slice(0, 10) + '••••••••••••••••' + token.slice(-6)) : token;
-    $('btnToggleKey').textContent = state.masked ? 'Tampilkan' : 'Sembunyikan';
+  function updateModeButtons(){
+    var isList = state.viewMode === 'list';
+    $('btnModeList').classList.toggle('active', isList);
+    $('btnModeList').setAttribute('aria-selected', isList);
+    $('btnModeFolder').classList.toggle('active', !isList);
+    $('btnModeFolder').setAttribute('aria-selected', !isList);
+    var chipExpand = document.querySelector('[data-chip="expand"]');
+    if(chipExpand) chipExpand.hidden = !isList;
   }
 
-  // Event Listeners
-  $('btnApiKey').onclick = function(){
-    updateKeyDisplay();
-    $('apiKeyModal').hidden = false;
+  function renderFolderMode(list, container){
+    var byCourse = {};
+    list.forEach(function(it){
+      if(!byCourse[it.groupName]) byCourse[it.groupName] = { id: it.groupId, sessions: {} };
+      var sKey = it.secMeet || 999;
+      if(!byCourse[it.groupName].sessions[sKey]){
+        byCourse[it.groupName].sessions[sKey] = { name: it.secName, meet: it.secMeet, items: [] };
+      }
+      byCourse[it.groupName].sessions[sKey].items.push(it);
+    });
+
+    var path = state.folderPath || [];
+    container.innerHTML = '';
+
+    var wrap = document.createElement('div');
+    wrap.className = 'gdrive-wrap';
+
+    // Breadcrumbs
+    var crumbs = document.createElement('nav');
+    crumbs.className = 'gdrive-crumbs';
+    crumbs.setAttribute('aria-label', 'Breadcrumb');
+
+    var rootBtn = document.createElement('button');
+    rootBtn.type = 'button';
+    rootBtn.className = path.length ? 'gdrive-crumb-btn' : 'gdrive-crumb-current';
+    rootBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><span>Drive</span>';
+    if(path.length){
+      rootBtn.onclick = function(){ state.folderPath = []; renderTree(); };
+    }
+    crumbs.appendChild(rootBtn);
+
+    if(path.length >= 1){
+      var sep1 = document.createElement('span');
+      sep1.className = 'gdrive-crumb-sep';
+      sep1.textContent = '›';
+      crumbs.appendChild(sep1);
+
+      var cName = path[0];
+      var cBtn = document.createElement('button');
+      cBtn.type = 'button';
+      cBtn.className = path.length === 1 ? 'gdrive-crumb-current' : 'gdrive-crumb-btn';
+      cBtn.textContent = cName;
+      if(path.length > 1){
+        cBtn.onclick = function(){ state.folderPath = [cName]; renderTree(); };
+      }
+      crumbs.appendChild(cBtn);
+    }
+
+    if(path.length >= 2){
+      var sep2 = document.createElement('span');
+      sep2.className = 'gdrive-crumb-sep';
+      sep2.textContent = '›';
+      crumbs.appendChild(sep2);
+
+      var sKey = path[1];
+      var sName = (byCourse[path[0]] && byCourse[path[0]].sessions[sKey])
+        ? byCourse[path[0]].sessions[sKey].name
+        : ('Sesi ' + sKey);
+      var sSpan = document.createElement('span');
+      sSpan.className = 'gdrive-crumb-current';
+      sSpan.textContent = sName;
+      crumbs.appendChild(sSpan);
+    }
+
+    wrap.appendChild(crumbs);
+
+    // Level 0: Courses
+    if(path.length === 0){
+      var courseNames = Object.keys(byCourse).sort();
+      if(!courseNames.length){
+        wrap.innerHTML += '<div class="empty-state">Tidak ada folder mata kuliah.</div>';
+        container.appendChild(wrap);
+        return;
+      }
+
+      var head = document.createElement('div');
+      head.className = 'gdrive-section-title';
+      head.textContent = 'Mata Kuliah (' + courseNames.length + ')';
+      wrap.appendChild(head);
+
+      var grid = document.createElement('div');
+      grid.className = 'gdrive-grid';
+
+      courseNames.forEach(function(cName){
+        var cData = byCourse[cName];
+        var sKeys = Object.keys(cData.sessions);
+        var fCount = sKeys.reduce(function(acc, k){ return acc + cData.sessions[k].items.length; }, 0);
+
+        var card = document.createElement('div');
+        card.className = 'gdrive-folder-card';
+        card.innerHTML = '<div class="gdrive-folder-icon">' +
+          '<svg width="24" height="24" viewBox="0 0 24 24" fill="#fbbc04" stroke="#d56b00" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' +
+          '</div>' +
+          '<div class="gdrive-folder-info">' +
+            '<div class="gdrive-folder-name" title="' + cName + '">' + cName + '</div>' +
+            '<div class="gdrive-folder-meta">' + sKeys.length + ' Sesi · ' + fCount + ' Berkas</div>' +
+          '</div>' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted);flex:0 0 auto"><polyline points="9 18 15 12 9 6"/></svg>';
+        card.onclick = function(){
+          state.folderPath = [cName];
+          renderTree();
+        };
+        grid.appendChild(card);
+      });
+      wrap.appendChild(grid);
+
+    // Level 1: Sessions
+    }else if(path.length === 1){
+      var cName = path[0];
+      var cData = byCourse[cName];
+      if(!cData){
+        wrap.innerHTML += '<div class="empty-state">Folder ini kosong di kategori ini.<br><br><button class="btn-ghost" type="button" id="gdriveBackRoot">Kembali ke Drive</button></div>';
+        container.appendChild(wrap);
+        var b = $('gdriveBackRoot');
+        if(b) b.onclick = function(){ state.folderPath = []; renderTree(); };
+        return;
+      }
+
+      var sKeys = Object.keys(cData.sessions).map(Number).sort(function(a,b){
+        return state.sort === 'sess-desc' ? b - a : a - b;
+      });
+
+      var head = document.createElement('div');
+      head.className = 'gdrive-section-title';
+      head.textContent = 'Folder Sesi / Pertemuan (' + sKeys.length + ')';
+      wrap.appendChild(head);
+
+      var grid = document.createElement('div');
+      grid.className = 'gdrive-grid';
+
+      sKeys.forEach(function(sKey){
+        var sData = cData.sessions[sKey];
+        var card = document.createElement('div');
+        card.className = 'gdrive-folder-card';
+        card.innerHTML = '<div class="gdrive-folder-icon">' +
+          '<svg width="24" height="24" viewBox="0 0 24 24" fill="#4285f4" stroke="#1a73e8" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' +
+          '</div>' +
+          '<div class="gdrive-folder-info">' +
+            '<div class="gdrive-folder-name" title="' + sData.name + '">' + sData.name + '</div>' +
+            '<div class="gdrive-folder-meta">' + sData.items.length + ' Berkas</div>' +
+          '</div>' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted);flex:0 0 auto"><polyline points="9 18 15 12 9 6"/></svg>';
+        card.onclick = function(){
+          state.folderPath = [cName, sKey];
+          renderTree();
+        };
+        grid.appendChild(card);
+      });
+      wrap.appendChild(grid);
+
+    // Level 2: Files in Session
+    }else if(path.length === 2){
+      var cName = path[0];
+      var sKey = path[1];
+      var cData = byCourse[cName];
+      var sData = cData && cData.sessions[sKey];
+      if(!sData || !sData.items.length){
+        wrap.innerHTML += '<div class="empty-state">Tidak ada berkas di sesi ini.<br><br><button class="btn-ghost" type="button" id="gdriveBackCourse">Kembali ke Mata Kuliah</button></div>';
+        container.appendChild(wrap);
+        var b = $('gdriveBackCourse');
+        if(b) b.onclick = function(){ state.folderPath = [cName]; renderTree(); };
+        return;
+      }
+
+      var head = document.createElement('div');
+      head.className = 'gdrive-section-title';
+      head.textContent = 'Berkas (' + sData.items.length + ')';
+      wrap.appendChild(head);
+
+      var fileList = document.createElement('div');
+      fileList.style.display = 'flex';
+      fileList.style.flexDirection = 'column';
+      fileList.style.gap = '8px';
+
+      var items = sData.items.slice();
+      if(state.sort === 'name-asc') items.sort(function(a,b){ return a.name.localeCompare(b.name); });
+      else if(state.sort === 'date-desc') items.sort(function(a,b){ return b.createdAt - a.createdAt; });
+      else if(state.sort === 'size-desc') items.sort(function(a,b){ return b.size - a.size; });
+
+      items.forEach(function(item){
+        fileList.appendChild(createFileRow(item, false));
+      });
+      wrap.appendChild(fileList);
+    }
+
+    container.appendChild(wrap);
+  }
+
+  $('btnModeList').onclick = function(){
+    if(state.viewMode === 'list') return;
+    state.viewMode = 'list';
+    localStorage.setItem('edlink_files_mode', 'list');
+    updateModeButtons();
+    renderTree();
   };
-  $('keyClose').onclick = function(){ $('apiKeyModal').hidden = true; };
-  $('btnToggleKey').onclick = function(){ state.masked = !state.masked; updateKeyDisplay(); };
-  $('btnCopyKey').onclick = function(){
-    if(!token){ toast('Tidak ada token'); return; }
-    navigator.clipboard.writeText(token).then(function(){ toast('API Key disalin ke clipboard'); });
+  $('btnModeFolder').onclick = function(){
+    if(state.viewMode === 'folder') return;
+    state.viewMode = 'folder';
+    state.folderPath = [];
+    localStorage.setItem('edlink_files_mode', 'folder');
+    updateModeButtons();
+    renderTree();
   };
-  $('btnDlKey').onclick = function(){
-    if(!token){ toast('Tidak ada token'); return; }
-    var blob = new Blob([token], { type:'text/plain;charset=utf-8' });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'apikey.txt';
-    a.click();
-    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
-  };
-  $('btnSaveKey').onclick = function(){
-    var val = $('newKeyInput').value.trim();
-    if(!val){ toast('Masukkan token valid'); return; }
-    token = val;
-    sessionStorage.setItem('edlink_active_token', token);
-    localStorage.setItem(KEY, token);
-    $('newKeyInput').value = '';
-    updateKeyDisplay();
-    toast('API Key diperbarui');
-    loadData();
-  };
+
 
   $('viewerClose').onclick = function(){ cleanupViewer(); $('viewerModal').hidden = true; };
   $('viewerModal').onclick = function(e){ if(e.target === $('viewerModal')){ cleanupViewer(); $('viewerModal').hidden = true; } };
@@ -1017,7 +1218,6 @@
     };
   });
 
-  $('btnSync').onclick = function(){ loadData(); };
 
   // Keyboard shortcut '/' to search
   document.addEventListener('keydown', function(e){
@@ -1027,7 +1227,6 @@
     }else if(e.key === 'Escape'){
       cleanupViewer();
       $('viewerModal').hidden = true;
-      $('apiKeyModal').hidden = true;
     }
   });
 

@@ -51,8 +51,15 @@
   .top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:22px}
   .top h1{font-size:22px;margin:0 0 3px;letter-spacing:-.02em}
   .top .sub{margin:0;color:var(--muted);font-size:12.5px}
+  .user-card{margin-top:6px;background:var(--card);border:1px solid var(--line);border-radius:8px;
+             padding:5px 9px;display:inline-flex;flex-direction:column;gap:2px;max-width:100%}
+  .user-name{font-size:12px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px}
+  .user-nim-row{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+  .user-nim{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;letter-spacing:.02em}
+  .btn-copy{border:1px solid var(--line);background:var(--soft);color:var(--muted);
+            border-radius:4px;padding:1px 5px;font-size:10.5px;line-height:1.2;display:inline-flex;align-items:center;gap:3px;cursor:pointer}
+  .btn-copy:hover{color:var(--ink);border-color:var(--ink);background:var(--hover)}
   .who{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--muted);min-width:0}
-  .who .name{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .btn-ghost{border:1px solid var(--line);background:var(--card);color:var(--ink);
              border-radius:8px;padding:7px 11px;font-size:12.5px}
   .btn-ghost:hover{background:var(--hover)}
@@ -193,11 +200,13 @@
   /* ---------- mobile ---------- */
   @media (max-width:640px){
     .wrap{padding:20px 14px 60px}
-    .top{flex-direction:column;align-items:stretch;gap:10px;margin-bottom:18px}
+    .top{flex-direction:row;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:18px}
     .top h1{font-size:20px;margin-bottom:2px}
     .top .sub{font-size:11.5px;line-height:1.45}
-    .who{width:100%;justify-content:space-between;gap:8px;padding-top:2px}
-    .who .name{flex:1 1 auto;min-width:0;max-width:none;font-size:12px}
+    .user-card{margin-top:4px;padding:4px 7px}
+    .user-name{max-width:180px;font-size:11.5px}
+    .user-nim-row{font-size:10.5px}
+    .who{width:auto;padding-top:2px;flex-shrink:0}
     .btn-ghost{flex:0 0 auto;padding:6px 10px;font-size:12px}
     .block{padding:14px 15px;margin-bottom:16px}
     .post{padding:13px 15px}
@@ -244,10 +253,18 @@
     <header class="top">
       <div>
         <h1>EdlinkMark</h1>
-        <!-- <p class="sub" id="scope"></p> -->
+        <div class="user-card" id="userCard">
+          <div class="user-name" id="whoName"></div>
+          <div class="user-nim-row">
+            <span class="user-nim" id="whoNim"></span>
+            <button type="button" class="btn-copy" id="copyNim" title="Salin NIM">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span>Salin</span>
+            </button>
+          </div>
+        </div>
       </div>
       <div class="who">
-        <span class="name" id="whoName"></span>
         <button class="btn-ghost" id="logout" type="button">Keluar</button>
       </div>
     </header>
@@ -255,6 +272,7 @@
     <nav class="tabs" id="mainTabs">
       <button class="tab active" type="button" data-view="posts">Postingan</button>
       <a class="tab" id="navFiles" href="files.html" style="text-decoration:none;display:inline-flex;align-items:center">Folder Berkas ↗</a>
+      <a class="tab" id="navAnswer" href="answer.html" style="text-decoration:none;display:inline-flex;align-items:center">Lembar Jawaban ↗</a>
     </nav>
 
     <div id="viewPosts">
@@ -704,7 +722,11 @@
   function renderApp(user){
     $('login').hidden = true;
     $('app').hidden = false;
-    $('whoName').textContent = (user && (user.name || user.email)) || '';
+    $('whoName').textContent = (user && (user.name || user.fullname || user.email)) || '';
+    var nim = (user && (user.identity_number || user.identityNumber || user.nim || user.username || (user.university && user.university.identity_number))) || localStorage.getItem('edlink_last') || '';
+    $('whoNim').textContent = nim;
+    $('copyNim').hidden = !nim;
+    $('userCard').hidden = !user;
   }
 
   function showLogin(msg){
@@ -715,6 +737,9 @@
     $('loginErr').innerHTML = msg ? '<p class="err">' + esc(msg) + '</p>' : '';
     var last = localStorage.getItem('edlink_last');
     if(last && !$('nim').value) $('nim').value = last;
+    $('whoName').textContent = '';
+    $('whoNim').textContent = '';
+    if($('userCard')) $('userCard').hidden = true;
   }
 
   function showChecking(){
@@ -1214,6 +1239,52 @@
       sessionStorage.setItem('edlink_transfer_time', String(Date.now()));
       sessionStorage.setItem('edlink_transfer_key', token);
       location.href = 'files.html';
+    });
+  }
+  var navAnswer = $('navAnswer');
+  if(navAnswer){
+    navAnswer.addEventListener('click', function(e){
+      e.preventDefault();
+      if(!token){
+        alert('Silakan masuk terlebih dahulu.');
+        return;
+      }
+      sessionStorage.setItem('edlink_transfer_from', 'index.html');
+      sessionStorage.setItem('edlink_transfer_time', String(Date.now()));
+      sessionStorage.setItem('edlink_transfer_key', token);
+      location.href = 'answer.html';
+    });
+  }
+  function fallbackCopy(text){
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try{
+      document.execCommand('copy');
+      toast('NIM disalin ke clipboard');
+    }catch(e){
+      toast('Gagal menyalin NIM');
+    }
+    ta.remove();
+  }
+
+  var copyNimBtn = $('copyNim');
+  if(copyNimBtn){
+    copyNimBtn.addEventListener('click', function(){
+      var nim = $('whoNim').textContent.trim();
+      if(!nim) return;
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(nim).then(function(){
+          toast('NIM disalin ke clipboard');
+        }).catch(function(){
+          fallbackCopy(nim);
+        });
+      }else{
+        fallbackCopy(nim);
+      }
     });
   }
 

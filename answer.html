@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EdlinkMark — Formater Lembar Jawaban</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#111111">
+<script>
+(function(){
+  var transferKey = sessionStorage.getItem('edlink_transfer_key');
+  var activeKey = sessionStorage.getItem('edlink_active_token');
+  var localKey = localStorage.getItem('edlink_apikey');
+  var authorized = sessionStorage.getItem('edlink_files_authorized');
+  if(!transferKey && !activeKey && !localKey && !authorized){
+    location.replace('index.html');
+  }
+})();
+</script>
+<style>
+  :root{
+    --bg:#f4f4f2; --card:#ffffff; --ink:#111111; --muted:#6f6f6f;
+    --line:#e3e3e0; --soft:#fafaf9; --hover:#f0f0ee; --accent:#1a73e8;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none !important}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  button,input,select{font:inherit}
+  button{cursor:pointer}
+  a{color:var(--ink)}
+  .wrap{max-width:760px;margin:0 auto;padding:24px 18px 70px}
+
+  /* Header */
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
+  .brand{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .brand h1{font-size:20px;margin:0;letter-spacing:-.02em}
+  .brand a.back{font-size:12.5px;text-decoration:none;color:var(--muted);border:1px solid var(--line);
+                border-radius:6px;padding:5px 9px;background:var(--card);display:inline-flex;align-items:center;gap:4px}
+  .brand a.back:hover{border-color:var(--ink);color:var(--ink)}
+
+  /* Cards */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+  .card h2{margin:0 0 4px;font-size:16px;font-weight:600}
+  .card p.desc{margin:0 0 16px;font-size:13px;color:var(--muted)}
+
+  /* Form */
+  .form-group{margin-bottom:14px}
+  .form-group label{display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:5px;letter-spacing:.03em}
+  .form-group select,
+  .form-group input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;
+                     background:var(--soft);font-size:14px;color:var(--ink);outline:none}
+  .form-group select:focus,
+  .form-group input:focus{border-color:var(--ink);background:#fff}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+  /* Document Sheet Preview */
+  .sheet{background:#fff;border:1px solid var(--line);border-radius:10px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,.04);font-family:"Times New Roman",Times,serif}
+  .sheet-title{text-align:center;font-weight:bold;font-size:15px;margin-bottom:18px;letter-spacing:.05em}
+  .sheet-table{width:100%;font-size:13.5px;border-collapse:collapse}
+  .sheet-table td{padding:3px 0;vertical-align:top}
+  .sheet-table td.label-col{width:140px;color:#222}
+  .sheet-table td.colon-col{width:20px;text-align:center}
+  .sheet-table td.val-col{font-weight:600;color:#000}
+  .sheet-divider{border:0;border-top:1.5px solid #000;margin:16px 0 12px}
+  .sheet-note{font-size:12px;color:var(--muted);text-align:center;font-style:italic;font-family:-apple-system,sans-serif}
+
+  /* Action Buttons */
+  .actions{display:flex;align-items:center;gap:10px;margin-top:16px}
+  .btn-primary{padding:10px 18px;border-radius:8px;border:1px solid var(--ink);
+               background:var(--ink);color:#fff;font-weight:600;font-size:13.5px;display:inline-flex;align-items:center;gap:6px}
+  .btn-primary:hover{opacity:.9}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:99;
+         background:var(--ink);color:#fff;padding:8px 14px;border-radius:8px;font-size:12.5px}
+
+  @media(max-width:640px){
+    .wrap{padding:14px 12px 50px}
+    .brand h1{font-size:18px}
+    .grid-2{grid-template-columns:1fr;gap:10px}
+    .sheet{padding:14px 12px}
+    .sheet-table td.label-col{width:110px;font-size:12.5px}
+    .sheet-table td.val-col{font-size:12.5px}
+    .btn-primary{width:100%;justify-content:center}
+  }
+</style>
+<script src="jszip.min.js"></script>
+<script>
+if(typeof JSZip === 'undefined'){
+  document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"><\/script>');
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <a href="index.html" class="back">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        <span>Beranda</span>
+      </a>
+      <a href="files.html" class="back">
+        <span>Folder Berkas ↗</span>
+      </a>
+      <h1>Lembar Jawaban</h1>
+    </div>
+  </header>
+
+  <!-- Form Pengaturan -->
+  <section class="card">
+    <h2>Formater Lembar Jawaban</h2>
+    <p class="desc">Pilih mata kuliah untuk mengisi otomatis template Word (example.docx).</p>
+
+    <div class="form-group">
+      <label for="selCourse">Pilih Mata Kuliah</label>
+      <select id="selCourse">
+        <option value="">Memuat data kelas EdLink…</option>
+      </select>
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="inCourse">Mata Kuliah</label>
+        <input type="text" id="inCourse" placeholder="Nama mata kuliah...">
+      </div>
+      <div class="form-group">
+        <label for="inClass">Kelas</label>
+        <input type="text" id="inClass" value="IF104" placeholder="Contoh: IF104">
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="inName">Nama Mahasiswa</label>
+        <input type="text" id="inName" placeholder="Nama lengkap...">
+      </div>
+      <div class="form-group">
+        <label for="inNim">NIM</label>
+        <input type="text" id="inNim" placeholder="Nomor Induk Mahasiswa...">
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="inLecturer">Dosen Pengampu</label>
+        <input type="text" id="inLecturer" placeholder="Nama dosen pengampu...">
+      </div>
+      <div class="form-group">
+        <label for="inProdi">Program Studi</label>
+        <input type="text" id="inProdi" value="PJJ INFORMATIKA S1">
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-primary" id="btnDownload" type="button">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>Unduh Lembar Jawaban (.docx)</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Pratinjau Dokumen -->
+  <section class="card">
+    <h2>Pratinjau Lembar Jawaban</h2>
+    <p class="desc">Tampilan kop lembar jawaban yang akan dicetak pada file Word.</p>
+
+    <div class="sheet">
+      <div class="sheet-title">LEMBAR JAWABAN</div>
+      <table class="sheet-table">
+        <tbody>
+          <tr>
+            <td class="label-col">Mata Kuliah</td>
+            <td class="colon-col">:</td>
+            <td class="val-col" id="pvCourse">-</td>
+          </tr>
+          <tr>
+            <td class="label-col">Kelas</td>
+            <td class="colon-col">:</td>
+            <td class="val-col" id="pvClass">IF104</td>
+          </tr>
+          <tr>
+            <td class="label-col">Prodi</td>
+            <td class="colon-col">:</td>
+            <td class="val-col" id="pvProdi">PJJ INFORMATIKA S1</td>
+          </tr>
+          <tr>
+            <td class="label-col">Nama Mahasiswa</td>
+            <td class="colon-col">:</td>
+            <td class="val-col" id="pvName">-</td>
+          </tr>
+          <tr>
+            <td class="label-col">NIM</td>
+            <td class="colon-col">:</td>
+            <td class="val-col" id="pvNim">-</td>
+          </tr>
+          <tr>
+            <td class="label-col">Dosen</td>
+            <td class="colon-col">:</td>
+            <td class="val-col" id="pvLecturer">-</td>
+          </tr>
+        </tbody>
+      </table>
+      <hr class="sheet-divider">
+      <div class="sheet-note">[ Area Jawaban Mahasiswa ]</div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  var LOCAL = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || location.protocol === 'file:';
+  var BASE  = LOCAL ? 'https://kuliah.unsia.ac.id/api/v1.4' : '/api/v1.4';
+  var KEY   = 'edlink_apikey';
+
+  var token = '';
+  var transferKey = sessionStorage.getItem('edlink_transfer_key');
+  if(transferKey){
+    token = transferKey;
+    sessionStorage.setItem('edlink_files_authorized', '1');
+    sessionStorage.setItem('edlink_active_token', token);
+    sessionStorage.removeItem('edlink_transfer_key');
+    sessionStorage.removeItem('edlink_transfer_from');
+    sessionStorage.removeItem('edlink_transfer_time');
+  }else{
+    token = sessionStorage.getItem('edlink_active_token') || localStorage.getItem(KEY) || '';
+  }
+
+  if(!token){
+    location.replace('index.html');
+    return;
+  }
+  sessionStorage.setItem('edlink_files_authorized', '1');
+
+  function $(id){ return document.getElementById(id); }
+
+  function toast(msg){
+    var old = document.querySelector('.toast');
+    if(old) old.remove();
+    var t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function(){ t.remove(); }, 3000);
+  }
+
+  async function api(path, body){
+    var headers = {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'X-App-Locale': 'id',
+      'X-Referer': 'https://kuliah.unsia.ac.id/'
+    };
+    if(token) headers['Authorization'] = 'Bearer ' + token;
+    var res = await fetch(BASE + path, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(body || {})
+    });
+    var json = await res.json();
+    if(json && json.applicationSystem && json.applicationSystem.code === 2){
+      throw new Error('Sesi berakhir atau token tidak valid.');
+    }
+    return json;
+  }
+  var state = {
+    user: null,
+    groups: [],
+    lecturers: {}
+  };
+
+  function parseCourseAndClass(group){
+    var rawName = (group && group.name) || '';
+    var explicitClass = (group && (group.class_name || group.classroom || group.class || group.code || group.section)) || '';
+    var mEnd = rawName.match(/^(.*?)\s*[-–]\s*([A-Za-z0-9\-]+)$/);
+    if(mEnd){
+      return { course: mEnd[1].trim(), cls: explicitClass || mEnd[2].trim() };
+    }
+    var mParen = rawName.match(/^(.*?)\s*\(([^)]+)\)$/);
+    if(mParen){
+      return { course: mParen[1].trim(), cls: explicitClass || mParen[2].trim() };
+    }
+    var mFront = rawName.match(/^([A-Za-z0-9\-]+)\s*[-–]\s*(.*?)$/);
+    if(mFront && mFront[1].length <= 10){
+      return { course: mFront[2].trim(), cls: explicitClass || mFront[1].trim() };
+    }
+    var mBracket = rawName.match(/^\[([^\]]+)\]\s*(.*?)$/);
+    if(mBracket){
+      return { course: mBracket[2].trim(), cls: explicitClass || mBracket[1].trim() };
+    }
+    return { course: rawName.trim(), cls: explicitClass };
+  }
+
+  function updatePreview(){
+    $('pvCourse').textContent = $('inCourse').value.trim() || '-';
+    $('pvClass').textContent = $('inClass').value.trim() || '-';
+    $('pvProdi').textContent = $('inProdi').value.trim() || '-';
+    $('pvName').textContent = $('inName').value.trim() || '-';
+    $('pvNim').textContent = $('inNim').value.trim() || '-';
+    $('pvLecturer').textContent = $('inLecturer').value.trim() || '-';
+  }
+
+  ['inCourse', 'inClass', 'inProdi', 'inName', 'inNim', 'inLecturer'].forEach(function(id){
+    $(id).addEventListener('input', updatePreview);
+  });
+
+  function extractLecturerFromGroup(g){
+    if(!g) return '';
+    if(typeof g.lecturer === 'string' && g.lecturer.trim()) return g.lecturer.trim();
+    if(typeof g.teacher === 'string' && g.teacher.trim()) return g.teacher.trim();
+    if(typeof g.dosen === 'string' && g.dosen.trim()) return g.dosen.trim();
+
+    if(g.lecturer && (g.lecturer.name || g.lecturer.fullName)) return (g.lecturer.name || g.lecturer.fullName).trim();
+    if(g.teacher && (g.teacher.name || g.teacher.fullName)) return (g.teacher.name || g.teacher.fullName).trim();
+    if(g.dosen && (g.dosen.name || g.dosen.fullName)) return (g.dosen.name || g.dosen.fullName).trim();
+
+    if(Array.isArray(g.lecturers) && g.lecturers.length){
+      var names = g.lecturers.map(function(x){ return typeof x === 'string' ? x : (x && (x.name || x.fullName)); }).filter(Boolean);
+      if(names.length) return names.join(', ');
+    }
+    if(Array.isArray(g.teachers) && g.teachers.length){
+      var names = g.teachers.map(function(x){ return typeof x === 'string' ? x : (x && (x.name || x.fullName)); }).filter(Boolean);
+      if(names.length) return names.join(', ');
+    }
+    if(Array.isArray(g.dosen) && g.dosen.length){
+      var names = g.dosen.map(function(x){ return typeof x === 'string' ? x : (x && (x.name || x.fullName)); }).filter(Boolean);
+      if(names.length) return names.join(', ');
+    }
+    if(Array.isArray(g.instructors) && g.instructors.length){
+      var names = g.instructors.map(function(x){ return typeof x === 'string' ? x : (x && (x.name || x.fullName)); }).filter(Boolean);
+      if(names.length) return names.join(', ');
+    }
+    return g.lecturer_name || g.teacher_name || g.dosen_name || '';
+  }
+
+  async function findLecturer(group){
+    if(!group) return '';
+    if(state.lecturers[group.id]) return state.lecturers[group.id];
+
+    var direct = extractLecturerFromGroup(group);
+    if(direct){
+      state.lecturers[group.id] = direct;
+      return direct;
+    }
+
+    var myName = (state.user && (state.user.name || state.user.fullName)) || '';
+
+    // Coba endpoint /group/detail
+    try{
+      var dRes = await api('/group/detail', { id: group.id, group_id: group.id });
+      var dData = dRes && (dRes.data || dRes);
+      var dLecturer = extractLecturerFromGroup(dData);
+      if(dLecturer){
+        state.lecturers[group.id] = dLecturer;
+        return dLecturer;
+      }
+    }catch(e){}
+
+    // Coba endpoint /group/members
+    try{
+      var mRes = await api('/group/members', { id: group.id, group_id: group.id });
+      var members = Array.isArray(mRes.data) ? mRes.data : ((mRes.data && mRes.data.data) || []);
+      for(var j = 0; j < members.length; j++){
+        var m = members[j];
+        var role = (m.role || m.user_role || (m.universityUser && m.universityUser.role) || '').toUpperCase();
+        var isTeacher = role.indexOf('TEACHER') >= 0 || role.indexOf('DOSEN') >= 0 || role.indexOf('LECTURER') >= 0 || role.indexOf('INSTRUCTOR') >= 0;
+        var mName = (m.universityUser && (m.universityUser.name || m.universityUser.fullName)) || (m.user && (m.user.name || m.user.fullName)) || m.name || '';
+        if((isTeacher || members.length <= 3) && mName && mName !== myName){
+          state.lecturers[group.id] = mName;
+          return mName;
+        }
+      }
+    }catch(e){}
+
+    // Coba cari dari pembuat postingan di kelas (/post/group/{id})
+    try{
+      var res = await api('/post/group/' + group.id);
+      var posts = Array.isArray(res.data) ? res.data : ((res.data && res.data.data) || []);
+      for(var i = 0; i < posts.length; i++){
+        var p = posts[i];
+        var author = (p.universityUser && (p.universityUser.name || p.universityUser.fullName)) ||
+                     (p.user && (p.user.name || p.user.fullName)) ||
+                     (p.creator && (p.creator.name || p.creator.fullName)) ||
+                     (p.teacher && (p.teacher.name || p.teacher.fullName)) ||
+                     (p.teacherQuestion && p.teacherQuestion.creator && (p.teacherQuestion.creator.name || p.teacherQuestion.creator.fullName)) ||
+                     (p.quiz && p.quiz.creator && (p.quiz.creator.name || p.quiz.creator.fullName)) ||
+                     (p.section && p.section.creator && (p.section.creator.name || p.section.creator.fullName));
+        if(author && author !== myName){
+          state.lecturers[group.id] = author;
+          return author;
+        }
+      }
+    }catch(e){}
+
+    return '';
+  }
+
+  $('selCourse').addEventListener('change', async function(){
+    var gid = this.value;
+    if(!gid){
+      $('inCourse').value = '';
+      $('inClass').value = 'IF104';
+      $('inLecturer').value = '';
+      updatePreview();
+      return;
+    }
+
+    var group = state.groups.find(function(g){ return String(g.id) === String(gid); });
+    if(!group) return;
+
+    var parsed = parseCourseAndClass(group);
+    $('inCourse').value = parsed.course || group.name;
+    $('inClass').value = parsed.cls || $('inClass').value.trim() || 'IF104';
+
+    // Cari dosen pengampu kelas
+    var direct = extractLecturerFromGroup(group);
+    if(direct){
+      $('inLecturer').value = direct;
+      updatePreview();
+    }else{
+      $('inLecturer').value = '';
+      $('inLecturer').placeholder = 'Mencari dosen pengampu…';
+      updatePreview();
+      var l = await findLecturer(group);
+      if($('selCourse').value === String(group.id)){
+        $('inLecturer').value = l || '';
+        $('inLecturer').placeholder = 'Nama dosen pengampu...';
+        updatePreview();
+      }
+    }
+  });
+
+  function escapeXml(str){
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
+  }
+
+  function fillDocumentXml(docXml, fields){
+    var xml = docXml;
+    xml = xml.replace(/(<w:t[^>]*>Mata Kuliah<\/w:t><w:tab\/><w:tab\/><w:t[^>]*>:\s*)(<\/w:t>)/, '$1' + escapeXml(fields.course) + '$2');
+    xml = xml.replace(/(<w:t[^>]*>Kelas<\/w:t><w:tab\/><w:tab\/><w:t[^>]*>:\s*)(<\/w:t>)/, '$1' + escapeXml(fields.cls) + '$2');
+    xml = xml.replace(/(<w:t[^>]*>Prodi<\/w:t><w:tab\/><w:tab\/><w:t[^>]*>:\s*)([^<]*)(<\/w:t>)/, '$1' + escapeXml(fields.prodi || 'PJJ INFORMATIKA S1') + '$3');
+    xml = xml.replace(/(<w:t[^>]*>Nama Mahasiswa<\/w:t><w:tab\/><w:tab\/><w:t[^>]*>:\s*)(<\/w:t>)/, '$1' + escapeXml(fields.name) + '$2');
+    xml = xml.replace(/(<w:t[^>]*>NIM<\/w:t><w:tab\/><w:tab\/><w:t[^>]*>:\s*)(<\/w:t>)/, '$1' + escapeXml(fields.nim) + '$2');
+    xml = xml.replace(/(<w:t[^>]*>Dosen<\/w:t><w:tab\/><w:tab\/><w:t[^>]*>:\s*)(<\/w:t>)/, '$1' + escapeXml(fields.lecturer) + '$2');
+    return xml;
+  }
+
+  $('btnDownload').onclick = async function(){
+    var btn = this;
+    var origText = btn.innerHTML;
+    btn.disabled = true;
+    btn.textContent = 'Menyiapkan berkas Word…';
+
+    try{
+      var tplRes = await fetch('example.docx');
+      if(!tplRes.ok) throw new Error('Gagal memuat template example.docx');
+      var tplBuf = await tplRes.arrayBuffer();
+
+      var zip = await JSZip.loadAsync(tplBuf);
+      var docXml = await zip.file('word/document.xml').async('text');
+
+      var fields = {
+        course: $('inCourse').value.trim(),
+        cls: $('inClass').value.trim(),
+        prodi: $('inProdi').value.trim() || 'PJJ INFORMATIKA S1',
+        name: $('inName').value.trim(),
+        nim: $('inNim').value.trim(),
+        lecturer: $('inLecturer').value.trim()
+      };
+
+      var filledXml = fillDocumentXml(docXml, fields);
+      zip.file('word/document.xml', filledXml);
+
+      var outBlob = await zip.generateAsync({
+        type: 'blob',
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      });
+
+      var sanitizedCourse = (fields.course || 'Jawaban').replace(/[^a-zA-Z0-9_\-]/g, '_').replace(/_+/g, '_');
+      var sanitizedNim = (fields.nim || '').replace(/[^a-zA-Z0-9_\-]/g, '');
+      var filename = 'Lembar_Jawaban_' + sanitizedCourse + (sanitizedNim ? ('_' + sanitizedNim) : '') + '.docx';
+
+      var dlUrl = URL.createObjectURL(outBlob);
+      var a = document.createElement('a');
+      a.href = dlUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(dlUrl); }, 3000);
+
+      toast('Lembar jawaban berhasil diunduh');
+    }catch(err){
+      alert('Gagal membuat dokumen: ' + (err.message || err));
+    }finally{
+      btn.disabled = false;
+      btn.innerHTML = origText;
+    }
+  };
+
+  async function loadData(){
+    try{
+      var pRes = await api('/user/profile');
+      var user = pRes.data;
+      if(user){
+        state.user = user;
+        $('inName').value = user.name || user.fullname || user.fullName || '';
+        $('inNim').value = user.identity_number ||
+                           user.identityNumber ||
+                           user.nim ||
+                           user.username ||
+                           (user.university && user.university.identity_number) ||
+                           localStorage.getItem('edlink_last') || '';
+        if(user.prodi || user.study_program || user.studyProgram || user.department){
+          $('inProdi').value = user.prodi || user.study_program || user.studyProgram || user.department;
+        }
+        updatePreview();
+      }
+
+      var periods = await api('/university/periods');
+      var active = (periods.data || []).find(function(p){ return p.status === 1; });
+
+      var gRes = await api('/group/all');
+      var all = Array.isArray(gRes.data) ? gRes.data : ((gRes.data && gRes.data.data) || []);
+      state.groups = active
+        ? all.filter(function(g){ return String(g.periode) === String(active.value); })
+        : all;
+
+      if(!state.groups.length && all.length){
+        state.groups = all;
+      }
+
+      var sel = $('selCourse');
+      sel.innerHTML = '<option value="">-- Pilih Mata Kuliah --</option>';
+      state.groups.forEach(function(g){
+        var opt = document.createElement('option');
+        opt.value = g.id;
+        opt.textContent = g.name;
+        sel.appendChild(opt);
+      });
+    }catch(err){
+      console.error(err);
+      $('selCourse').innerHTML = '<option value="">Gagal: ' + (err.message || err) + '</option>';
+      toast('Gagal memuat profil atau kelas: ' + (err.message || err));
+    }
+  }
+
+  loadData();
+})();
+</script>
+</body>
+</html>
