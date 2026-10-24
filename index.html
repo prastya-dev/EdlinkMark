@@ -254,7 +254,7 @@
 
     <nav class="tabs" id="mainTabs">
       <button class="tab active" type="button" data-view="posts">Postingan</button>
-      <button class="tab" type="button" data-view="folder">Folder Lampiran<span class="count" id="folderCount"></span></button>
+      <a class="tab" id="navFiles" href="files.html" style="text-decoration:none;display:inline-flex;align-items:center">Folder Berkas ↗</a>
     </nav>
 
     <div id="viewPosts">
@@ -1193,12 +1193,29 @@
     try{
       localStorage.removeItem(KEY);
       localStorage.removeItem(CRED);
+      sessionStorage.removeItem('edlink_transfer_key');
+      sessionStorage.removeItem('edlink_files_authorized');
+      sessionStorage.removeItem('edlink_active_token');
     }catch(e){}
     token = '';
     state.posts = []; state.quizzes = []; state.user = null;
     $('pass').value = '';
     showLogin('');
   });
+  var navFiles = $('navFiles');
+  if(navFiles){
+    navFiles.addEventListener('click', function(e){
+      e.preventDefault();
+      if(!token){
+        alert('Silakan masuk terlebih dahulu.');
+        return;
+      }
+      sessionStorage.setItem('edlink_transfer_from', 'index.html');
+      sessionStorage.setItem('edlink_transfer_time', String(Date.now()));
+      sessionStorage.setItem('edlink_transfer_key', token);
+      location.href = 'files.html';
+    });
+  }
 
   $('viewerClose').addEventListener('click', closeViewer);
   $('viewer').addEventListener('click', function(ev){ if(ev.target === $('viewer')) closeViewer(); });
