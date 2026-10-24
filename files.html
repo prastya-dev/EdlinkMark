@@ -68,16 +68,20 @@
                 color:var(--muted);cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center}
   .search-clear:hover{color:var(--ink)}
   .filter-toggle{padding:8px 12px;border:1px solid var(--line);background:var(--card);
-                 border-radius:8px;font-size:13px;display:flex;align-items:center;gap:6px}
+                 border-radius:8px;font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer}
+  .filter-toggle.has-filter{border-color:#16a34a}
+  .filter-dot{width:6px;height:6px;border-radius:50%;background:#16a34a;display:none;flex-shrink:0}
+  .filter-toggle.has-filter .filter-dot{display:inline-block}
   .filters{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);
            display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
   .filter-group label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:4px;font-weight:600;text-transform:uppercase}
   .filter-group select{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:7px;
                        background:var(--card);font-size:12.5px;outline:none}
-  .filter-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center}
-  .chip{border:1px solid var(--line);background:var(--soft);color:var(--muted);
-        border-radius:999px;padding:4px 10px;font-size:11.5px;font-weight:600;cursor:pointer}
-  .chip.active{background:var(--ink);border-color:var(--ink);color:#fff}
+  .filter-footer{grid-column:1 / -1;display:flex;justify-content:flex-end;padding-top:4px}
+  .btn-reset-filter{border:1px solid var(--line);background:var(--soft);color:#c5221f;
+                    border-radius:7px;padding:6px 12px;font-size:12px;font-weight:600;
+                    display:inline-flex;align-items:center;cursor:pointer}
+  .btn-reset-filter:hover{background:#fee2e2;border-color:#fca5a5}
   .stats-bar{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-top:8px}
 
   /* Main Category Tabs */
@@ -164,7 +168,6 @@
     .brand h1{font-size:18px}
     .search-box{padding:10px 12px;margin-bottom:12px}
     .filters{grid-template-columns:1fr;gap:8px}
-    .filter-chips .chip[data-chip="reset"]{margin-left:0}
     .stats-bar{flex-direction:column;align-items:flex-start;gap:3px}
     .tabs{gap:2px;margin-bottom:12px}
     .tab{flex:1;justify-content:center;padding:9px 6px;font-size:13px}
@@ -220,6 +223,7 @@
       <button class="filter-toggle" id="btnFilterToggle" type="button">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
         <span>Filter</span>
+        <span class="filter-dot"></span>
         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
     </div>
@@ -264,18 +268,11 @@
           <option value="size-desc">Ukuran Terbesar</option>
         </select>
       </div>
-    </div>
-
-    <div class="filter-chips">
-      <span class="chip" data-chip="gdrive">
-        <img src="https://ssl.gstatic.com/docs/doclist/images/drive_2022q3_32dp.png" width="13" height="13" alt="Drive" style="vertical-align:middle;margin-right:4px">Hanya Google Drive
-      </span>
-      <span class="chip" data-chip="expand">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><span id="txtExpand">Buka Semua Folder</span>
-      </span>
-      <span class="chip" data-chip="reset" style="margin-left:auto;color:#c5221f">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Reset Filter
-      </span>
+      <div class="filter-footer">
+        <button type="button" class="btn-reset-filter" id="btnResetFilter">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Reset Filter
+        </button>
+      </div>
     </div>
     <div class="stats-bar">
       <span id="statText">Memuat berkas…</span>
@@ -422,8 +419,6 @@
     sessFilter: '',
     typeFilter: '',
     sort: 'sess-asc',
-    onlyGdrive: false,
-    allExpanded: false,
     viewMode: (localStorage.getItem('edlink_files_mode') === 'folder' ? 'folder' : 'list'),
     folderPath: []
   };
@@ -855,7 +850,6 @@
     // Filter items (saat search, mencari di semua kategori)
     var list = state.items.filter(function(it){
       if(!isSearching && state.activeCat && it.cat !== state.activeCat) return false;
-      if(state.onlyGdrive && it.type !== 'gdrive') return false;
       if(state.courseFilter && String(it.groupId) !== String(state.courseFilter)) return false;
       if(state.sessFilter && String(it.secMeet) !== String(state.sessFilter)) return false;
       if(state.typeFilter && it.type !== state.typeFilter) return false;
@@ -936,7 +930,6 @@
       var cData = byCourse[cName];
       var cDetails = document.createElement('details');
       cDetails.className = 'course-card';
-      if(state.allExpanded) cDetails.open = true;
 
       var cSummary = document.createElement('summary');
       cSummary.className = 'course-head';
@@ -960,7 +953,6 @@
         var sData = cData.sessions[sKey];
         var sDetails = document.createElement('details');
         sDetails.className = 'sess-card';
-        if(state.allExpanded) sDetails.open = true;
 
         var sSummary = document.createElement('summary');
         sSummary.className = 'sess-head';
@@ -1029,6 +1021,7 @@
 
       state.posts = allPosts;
       state.items = extractItems(allPosts);
+      updateFilterState();
       renderTree();
     }catch(err){
       location.replace('index.html');
@@ -1040,8 +1033,6 @@
     $('btnModeList').setAttribute('aria-selected', isList);
     $('btnModeFolder').classList.toggle('active', !isList);
     $('btnModeFolder').setAttribute('aria-selected', !isList);
-    var chipExpand = document.querySelector('[data-chip="expand"]');
-    if(chipExpand) chipExpand.hidden = !isList;
   }
 
   function renderFolderMode(list, container){
@@ -1276,47 +1267,30 @@
     renderTree();
   };
 
+  function updateFilterState(){
+    var isFiltered = Boolean(state.courseFilter || state.sessFilter || state.typeFilter || (state.sort && state.sort !== 'sess-asc'));
+    $('btnFilterToggle').classList.toggle('has-filter', isFiltered);
+  }
+
   // Filter dropdowns
   $('btnFilterToggle').onclick = function(){
     var p = $('filterPanel');
     p.hidden = !p.hidden;
     $('btnFilterToggle').classList.toggle('active', !p.hidden);
   };
-  $('fCourse').onchange = function(){ state.courseFilter = this.value; renderTree(); };
-  $('fSess').onchange   = function(){ state.sessFilter   = this.value; renderTree(); };
-  $('fType').onchange   = function(){ state.typeFilter   = this.value; renderTree(); };
-  $('fSort').onchange   = function(){ state.sort         = this.value; renderTree(); };
+  $('fCourse').onchange = function(){ state.courseFilter = this.value; updateFilterState(); renderTree(); };
+  $('fSess').onchange   = function(){ state.sessFilter   = this.value; updateFilterState(); renderTree(); };
+  $('fType').onchange   = function(){ state.typeFilter   = this.value; updateFilterState(); renderTree(); };
+  $('fSort').onchange   = function(){ state.sort         = this.value; updateFilterState(); renderTree(); };
 
-  // Chips
-  document.querySelectorAll('.chip').forEach(function(c){
-    c.onclick = function(){
-      var action = c.getAttribute('data-chip');
-      if(action === 'gdrive'){
-        state.onlyGdrive = !state.onlyGdrive;
-        c.classList.toggle('active', state.onlyGdrive);
-        renderTree();
-      }else if(action === 'expand'){
-        state.allExpanded = !state.allExpanded;
-        var txt = $('txtExpand');
-        if(txt) txt.textContent = state.allExpanded ? 'Buka Semua Folder' : 'Tutup Semua Folder';
-        document.querySelectorAll('details.course-card, details.sess-card').forEach(function(d){
-          d.open = state.allExpanded;
-        });
-      }else if(action === 'reset'){
-        state.q = ''; qInput.value = ''; $('qClear').hidden = true;
-        state.courseFilter = ''; $('fCourse').value = '';
-        state.sessFilter = ''; $('fSess').value = '';
-        state.typeFilter = ''; $('fType').value = '';
-        state.sort = 'sess-asc'; $('fSort').value = 'sess-asc';
-        state.onlyGdrive = false;
-        state.allExpanded = false;
-        var txt = $('txtExpand');
-        if(txt) txt.textContent = 'Buka Semua Folder';
-        document.querySelector('[data-chip="gdrive"]').classList.remove('active');
-        renderTree();
-      }
-    };
-  });
+  $('btnResetFilter').onclick = function(){
+    state.courseFilter = ''; $('fCourse').value = '';
+    state.sessFilter = ''; $('fSess').value = '';
+    state.typeFilter = ''; $('fType').value = '';
+    state.sort = 'sess-asc'; $('fSort').value = 'sess-asc';
+    updateFilterState();
+    renderTree();
+  };
 
 
   // Keyboard shortcut '/' to search

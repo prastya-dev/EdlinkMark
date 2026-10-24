@@ -1,6 +1,6 @@
-var CACHE = 'edlinkmark-v7';
+var CACHE = 'edlinkmark-v8';
 var SHELL = ['./', './index.html', './files.html', './answer.html', './example.docx', './jszip.min.js', './manifest.webmanifest',
-             './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
+             './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', function(e){
   e.waitUntil(caches.open(CACHE).then(function(c){ return c.addAll(SHELL); })
