@@ -213,8 +213,8 @@
   function svgHeart(liked){
     return '<svg width="13" height="13" viewBox="0 0 24 24" fill="' + (liked ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="2" style="vertical-align:middle;flex-shrink:0"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
   }
-  function svgComment(){
-    return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;flex-shrink:0"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+  function svgComment(active){
+    return '<svg width="13" height="13" viewBox="0 0 24 24" fill="' + (active ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="2" style="vertical-align:middle;flex-shrink:0"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
   }
   function updateLikeBtn(b, liked, count){
     b.className = 'btn-action btn-like' + (liked ? ' active' : '');
@@ -222,7 +222,7 @@
   }
   function updateCommentBtn(b, active, count){
     b.className = 'btn-action btn-comment' + (active ? ' active' : '');
-    b.innerHTML = svgComment() + ' ' + (count || 0) + ' Komentar';
+    b.innerHTML = svgComment(active) + ' ' + (count || 0) + ' Komentar';
   }
   function postCard(p, likedBadge){
     var el = document.createElement('article');
@@ -298,7 +298,9 @@
 
     var commentBtn = document.createElement('button');
     commentBtn.type = 'button';
-    updateCommentBtn(commentBtn, E.isCommented(p, state), p.commentCount || 0);
+    var cCount = E.getCommentCount(p);
+    p.commentCount = cCount;
+    updateCommentBtn(commentBtn, E.isCommented(p, state), cCount);
     commentBtn.addEventListener('click', function(e){
       e.stopPropagation();
       toggleComments(p, el, commentBtn);
@@ -377,14 +379,17 @@
   function renderCommentList(p, wrap, list, commentBtn, postEl){
     wrap.innerHTML = '';
     var hasMe = list.some(function(c){ return E.isMyComment(c, state); });
+    var count = Math.max(list.length, E.getCommentCount(p));
+    p.commentCount = count;
     if(hasMe){
       p.isCommentedByMe = true;
       E.setLocalCommented(p.id, true);
-      document.querySelectorAll('[data-pid="' + p.id + '"] .btn-comment').forEach(function(cb){
-        updateCommentBtn(cb, true, p.commentCount || 0);
-      });
-      if(commentBtn) updateCommentBtn(commentBtn, true, p.commentCount || 0);
     }
+    var active = hasMe || E.isCommented(p, state);
+    document.querySelectorAll('[data-pid="' + p.id + '"] .btn-comment').forEach(function(cb){
+      updateCommentBtn(cb, active, count);
+    });
+    if(commentBtn) updateCommentBtn(commentBtn, active, count);
 
     var listEl = document.createElement('div');
     listEl.className = 'comments-list';
@@ -728,6 +733,38 @@
     rail.scrollLeft = state.railScroll || 0;
   }
 
+  async function checkCommentedPosts(posts, state){
+    if(!posts || !posts.length) return;
+    var candidates = posts.filter(function(p){
+      if(!p || !p.id) return false;
+      if(E.getCommentCount(p) <= 0) return false;
+      var m = E.getLocalCommented();
+      if(m[p.id] !== undefined) return false;
+      return true;
+    });
+    if(!candidates.length) return;
+
+    var poolSize = 3;
+    var queue = candidates.slice();
+    async function worker(){
+      while(queue.length){
+        var p = queue.shift();
+        try{
+          var list = await E.fetchCommentsForPost(p.id, state);
+          var hasMe = list.some(function(c){ return E.isMyComment(c, state); });
+          E.setLocalCommented(p.id, hasMe);
+          if(hasMe){
+            p.isCommentedByMe = true;
+            document.querySelectorAll('[data-pid="' + p.id + '"] .btn-comment').forEach(function(cb){
+              updateCommentBtn(cb, true, p.commentCount || list.length);
+            });
+          }
+        }catch(e){}
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(poolSize, candidates.length) }, worker));
+  }
+
   /* ---------------- data loaders ---------------- */
 
   async function loadAll(){
@@ -771,6 +808,7 @@
         }
         if(post.likesCount === undefined && post.likeCount !== undefined) post.likesCount = post.likeCount;
         if(E.isLiked(post)) post.like = true;
+        post.commentCount = E.getCommentCount(p);
         if((p.createdAt || 0) >= cutoff) posts.push(post);
       });
     }));
@@ -781,6 +819,7 @@
     state.postTotals = totals;
     renderQuizzes();
     renderPosts();
+    checkCommentedPosts(state.posts, state);
   }
   async function doLogin(uname, pass){
     var res = await E.login(uname, pass);

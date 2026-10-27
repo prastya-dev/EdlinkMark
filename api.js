@@ -47,17 +47,29 @@
   function setLocalCommented(id, val){
     try{
       var m = getLocalCommented();
-      if(val === false) delete m[id]; else m[id] = true;
+      if(val === false) m[id] = false; else m[id] = true;
       localStorage.setItem(COMMENTS_KEY, JSON.stringify(m));
     }catch(e){}
   }
+  function getCommentCount(p){
+    if(!p) return 0;
+    if(p.commentCount !== undefined && p.commentCount !== null) return Number(p.commentCount) || 0;
+    if(p.commentsCount !== undefined && p.commentsCount !== null) return Number(p.commentsCount) || 0;
+    if(p.comment_count !== undefined && p.comment_count !== null) return Number(p.comment_count) || 0;
+    if(p.comments_count !== undefined && p.comments_count !== null) return Number(p.comments_count) || 0;
+    if(p.totalComments !== undefined && p.totalComments !== null) return Number(p.totalComments) || 0;
+    if(p.total_comment !== undefined && p.total_comment !== null) return Number(p.total_comment) || 0;
+    if(Array.isArray(p.comments)) return p.comments.length;
+    return 0;
+  }
   function isCommented(p, state){
     if(!p) return false;
-    if(p.isCommentedByMe) return true;
+    var m = getLocalCommented();
+    if(m[p.id] !== undefined) return !!m[p.id];
+    if(p.isCommentedByMe || p.isCommented || p.is_commented || p.commented || p.has_commented) return true;
     var cached = state && state.commentCache && state.commentCache[p.id];
     if(cached && cached.some(function(c){ return isMyComment(c, state); })) return true;
-    var m = getLocalCommented();
-    return !!m[p.id];
+    return false;
   }
 
   function isMyComment(c, state){
@@ -82,6 +94,9 @@
     if(myUid && cUnivId && String(myUid) === String(cUnivId)) return true;
     if(myName && cName && (myName === cName || cName.includes(myName) || myName.includes(cName))) return true;
     if(myNim && myNim.length >= 6 && (cName.includes(myNim) || content.includes(myNim))) return true;
+    var myEmail = String(user.email || '').toLowerCase().trim();
+    var cEmail = String(cUser.email || '').toLowerCase().trim();
+    if(myEmail && cEmail && myEmail === cEmail) return true;
     return false;
   }
 
@@ -385,6 +400,7 @@
     isCommented: isCommented,
     setLocalCommented: setLocalCommented,
     isMyComment: isMyComment,
+    getCommentCount: getCommentCount,
     fetchCommentsForPost: fetchCommentsForPost
   };
 })(window);

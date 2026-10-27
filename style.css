@@ -69,7 +69,9 @@ input:focus{border-color:var(--ink);background:var(--card)}
             font-size:12px;font-weight:600;cursor:pointer}
 .btn-action:hover{border-color:var(--ink);color:var(--ink);background:var(--hover)}
 .btn-like.active{background:#fdf2f2;border-color:#fca5a5;color:#dc2626}
-.btn-comment.active{background:#16a34a !important;border-color:#16a34a !important;color:#fff !important;font-weight:600}
+.btn-comment.active{background:#f0fdf4;border-color:#86efac;color:#16a34a}
+.btn-like.active:hover{background:#fee2e2;border-color:#f87171}
+.btn-comment.active:hover{background:#dcfce7;border-color:#4ade80}
 .pauthor{color:var(--muted);font-size:12px}
 
 /* ---------- comments ---------- */
