@@ -30,7 +30,7 @@
   function setLocalLike(id, val){
     try{
       var m = getLocalLikes();
-      if(val) m[id] = true; else delete m[id];
+      if(val === false) m[id] = false; else m[id] = true;
       localStorage.setItem(LIKES_KEY, JSON.stringify(m));
     }catch(e){}
   }
@@ -198,8 +198,8 @@
       'X-App-Locale':'id',
       'X-Referer':'https://kuliah.unsia.ac.id/'
     };
-    if(extra) Object.keys(extra).forEach(function(k){ headers[k] = extra[k]; });
     if(!noAuth && cleanToken) headers['Authorization'] = 'Bearer ' + cleanToken;
+    if(extra) Object.keys(extra).forEach(function(k){ headers[k] = extra[k]; });
 
     var primaryUrl = BASE + path;
     var fallbackUrl = (BASE === '/api/v1.4' ? 'https://kuliah.unsia.ac.id/api/v1.4' : '/api/v1.4') + path;
@@ -358,6 +358,45 @@
     }
     return list;
   }
+  function getTokens(){
+    var raw = String(localStorage.getItem(KEY) || token || '').replace(/^Bearer\s+/i, '').replace(/^["']|["']$/g, '').trim();
+    var uid = '8dfd61d393db2e162c0e13ba10991f34';
+    var isEncoded = raw.length > 45 && raw.substring(13, 13 + 32) === uid;
+    var unencoded = isEncoded ? (raw.substring(0, 12) + raw.substring(45)) : raw;
+    var encoded = isEncoded ? raw : (raw.substring(0, 13) + uid + raw.substring(12));
+    return { raw: raw, unencoded: unencoded, encoded: encoded };
+  }
+
+  async function hmacSha256(keyStr, msgStr){
+    var enc = new TextEncoder();
+    var key = await crypto.subtle.importKey(
+      'raw', enc.encode(keyStr), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    );
+    var sig = await crypto.subtle.sign('HMAC', key, enc.encode(msgStr));
+    return Array.from(new Uint8Array(sig)).map(function(b){ return b.toString(16).padStart(2, '0'); }).join('');
+  }
+
+  async function collectAction(payload, groupId){
+    var toks = getTokens();
+    var bodyStr = JSON.stringify(payload);
+    var ts = Date.now().toString();
+    var nonce = (crypto.randomUUID ? crypto.randomUUID() : ('uuid-' + Math.random()));
+    var sig = await hmacSha256(toks.unencoded, bodyStr + ts + nonce);
+    var referer = 'https://kuliah.unsia.ac.id/panel/classes/' + (groupId || '') + '/sections';
+
+    var res = await api('/actions/collect', payload, false, {
+      'Authorization': 'Bearer ' + toks.encoded,
+      'X-Signature': sig,
+      'X-Timestamp': ts,
+      'X-Nonce': nonce,
+      'X-Referer': referer
+    });
+    if(res && res.applicationSystem && typeof res.applicationSystem.code === 'number' && res.applicationSystem.code !== 0){
+      throw new Error(res.applicationSystem.message || 'Gagal menyinkronkan data');
+    }
+    return res;
+  }
+
 
   // Export to global scope
   global.Edlink = {
@@ -397,10 +436,13 @@
     mediaExt: mediaExt,
     isLiked: isLiked,
     setLocalLike: setLocalLike,
+    getLocalLikes: getLocalLikes,
     isCommented: isCommented,
     setLocalCommented: setLocalCommented,
+    getLocalCommented: getLocalCommented,
     isMyComment: isMyComment,
     getCommentCount: getCommentCount,
-    fetchCommentsForPost: fetchCommentsForPost
+    fetchCommentsForPost: fetchCommentsForPost,
+    collectAction: collectAction,
   };
 })(window);

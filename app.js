@@ -320,10 +320,11 @@
 
   async function toggleLike(p, btn){
     var next = !E.isLiked(p);
-    p.like = next;
-    E.setLocalLike(p.id, next);
     var curCount = p.likesCount !== undefined ? p.likesCount : (p.likeCount || 0);
     var newCount = Math.max(0, curCount + (next ? 1 : -1));
+
+    p.like = next;
+    E.setLocalLike(p.id, next);
     p.likesCount = newCount;
     p.likeCount = newCount;
 
@@ -334,12 +335,34 @@
       updateLikeBtn(btn, next, newCount);
     }
 
-    E.api('/tracker', {
-      action: (next ? 'like' : 'unlike') + ' Bahan Ajar',
-      result: 1,
-      item_id: p.id
-    }).catch(function(){});
-    E.api(next ? ('/post/like/' + p.id) : ('/post/unlike/' + p.id), {}).catch(function(){});
+    try{
+      await E.collectAction({
+        category: 'post',
+        action: next ? 'like_post' : 'unlike_post',
+        reference_id: p.id,
+        u_type: 'u',
+        u_id: null,
+        value: null
+      }, p.groupId || (p.group && p.group.id));
+
+      E.api('/tracker', {
+        action: (next ? 'like' : 'unlike') + ' Bahan Ajar',
+        result: 1
+      }).catch(function(){});
+    }catch(err){
+      console.error('Like sync error:', err);
+      p.like = !next;
+      E.setLocalLike(p.id, !next);
+      p.likesCount = curCount;
+      p.likeCount = curCount;
+      document.querySelectorAll('[data-pid="' + p.id + '"] .btn-like').forEach(function(b){
+        updateLikeBtn(b, !next, curCount);
+      });
+      if(btn) updateLikeBtn(btn, !next, curCount);
+      var msg = (err && (err.message || (err.applicationSystem && err.applicationSystem.message))) || 'Gagal menyinkronkan suka ke server.';
+      toast(msg);
+      return;
+    }
 
     var likedN = state.posts.filter(E.isLiked).length;
     var cUn = $('tabCount_unliked');
@@ -807,7 +830,12 @@
           quizzes.push({ post:post, task:p.teacherQuestion, group:{ id:g.id, name:g.name } });
         }
         if(post.likesCount === undefined && post.likeCount !== undefined) post.likesCount = post.likeCount;
-        if(E.isLiked(post)) post.like = true;
+        if(p.like !== undefined){
+          post.like = !!p.like;
+          E.setLocalLike(p.id, !!p.like);
+        }else if(E.isLiked(post)){
+          post.like = true;
+        }
         post.commentCount = E.getCommentCount(p);
         if((p.createdAt || 0) >= cutoff) posts.push(post);
       });
